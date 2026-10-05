@@ -237,9 +237,9 @@ def run_demo(fresh: bool) -> None:
         say("Para correr el pipeline hace falta Java 17 o más reciente (Spark lo necesita).")
         say("Mac: brew install openjdk@17 · Windows: winget install EclipseAdoptium.Temurin.17.JRE")
         return
-    if fresh:
-        shutil.rmtree(ROOT / "data", ignore_errors=True)
     finflow = [str(VENV_PY), "-m", "finflow.cli"]
+    if fresh:  # conserva la última publicación gold: ATLAS no ve un hueco mientras se reconstruye
+        subprocess.run([*finflow, "reset"], cwd=ROOT, stdout=subprocess.DEVNULL)
     say(f"Generando las fuentes ({DEMO[0]} a {DEMO[1]})…")
     subprocess.run([*finflow, "generate", "--start", DEMO[0], "--end", DEMO[1]], cwd=ROOT, stdout=subprocess.DEVNULL)
     say("Corriendo el pipeline (unos 3 minutos). Míralo avanzar en el navegador.")

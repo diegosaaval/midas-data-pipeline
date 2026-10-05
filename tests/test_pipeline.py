@@ -102,3 +102,15 @@ def test_missing_source_is_not_retried(spark, tmp_path):
     attempts = pipe.meta.query("SELECT COUNT(*) AS n FROM task_runs WHERE task = 'bronze.refunds'")
     assert attempts[0]["n"] == 1
     pipe.close()
+
+
+def test_reset_keeps_the_last_gold_publication(tmp_path):
+    from finflow.pipeline import reset_workspace
+
+    s = make_settings(tmp_path)
+    for folder in ("landing/payments", "lake/bronze/payments", "lake/silver/payments", "lake/gold", "meta/plans", "warehouse"):
+        (tmp_path / folder).mkdir(parents=True)
+    (tmp_path / "lake" / "gold" / "_manifest.json").write_text("{}")
+    reset_workspace(s)
+    assert (tmp_path / "lake" / "gold" / "_manifest.json").exists()  # ATLAS sigue viendo la publicación anterior
+    assert not any((tmp_path / p).exists() for p in ("landing", "lake/bronze", "lake/silver", "meta", "warehouse"))

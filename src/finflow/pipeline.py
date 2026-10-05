@@ -222,5 +222,20 @@ def _parse_faults(raw: str) -> dict[str, int]:
     return faults
 
 
+def reset_workspace(settings: Settings) -> None:
+    """Deja el lago como nuevo pero conserva la última publicación gold y su manifiesto.
+
+    Así quien lee gold (ATLAS) nunca ve un hueco: sigue viendo la publicación anterior hasta que la
+    nueva la reemplace, y la reconoce por el run_id nuevo del manifiesto.
+    """
+    import shutil
+
+    lake = Path(settings.lake)
+    for path in [Path(settings.landing), Path(settings.meta_db).parent, Path(settings.duckdb).parent,
+                 *(p for p in (lake.iterdir() if lake.exists() else []) if p.name != "gold")]:
+        if path.is_dir():
+            shutil.rmtree(path)
+
+
 def date_range(start: date, end: date) -> list[date]:
     return [start + timedelta(days=i) for i in range((end - start).days + 1)]

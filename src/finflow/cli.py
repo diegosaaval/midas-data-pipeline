@@ -6,6 +6,7 @@
   finflow backfill --start 2026-09-05 --end 2026-09-08  # re-procesa un rango
   finflow status                                        # últimas corridas y métricas
   finflow ui                                            # pantalla de etapas en http://localhost:8100
+  finflow show                                          # demo en vivo de FINFLOW + ATLAS
 """
 
 from __future__ import annotations
@@ -50,6 +51,12 @@ def main(argv: list[str] | None = None) -> int:
     st = sub.add_parser("status", help="Últimas corridas y métricas por tarea")
     st.add_argument("--limit", type=int, default=5)
 
+    sub.add_parser("reset", help="Borrar fuentes, capas y metadatos (conserva la última publicación gold)")
+
+    sh = sub.add_parser("show", help="Demo en vivo de FINFLOW + ATLAS: un mes de datos y un incidente")
+    sh.add_argument("--auto", action="store_true", help="pausas fijas en vez de esperar Enter (para grabar)")
+    sh.add_argument("--port", type=int, default=8100)
+
     u = sub.add_parser("ui", help="Pantalla de etapas (solo lectura) en el navegador")
     u.add_argument("--port", type=int, default=8100)
     u.add_argument("--host", default="127.0.0.1")
@@ -70,6 +77,18 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "status":
         return _status(s, args.limit)
+
+    if args.cmd == "reset":
+        from .pipeline import reset_workspace
+
+        reset_workspace(s)
+        print("Listo: sin fuentes ni metadatos. La última publicación gold se mantiene hasta la próxima.")
+        return 0
+
+    if args.cmd == "show":
+        from .show import main as show
+
+        return show(args.auto, args.port)
 
     if args.cmd == "ui":
         return _ui(args.host, args.port, not args.no_browser)
