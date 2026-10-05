@@ -55,3 +55,18 @@ def test_write_landing_is_idempotent(tmp_path):
     write_landing(DAY, s)
     assert first == (tmp_path / "landing" / "payments" / f"ingest_date={DAY}" / "part-00000.jsonl").read_bytes()
     assert landed_dates(s) == [DAY]
+
+
+def test_usd_payments_are_priced_in_dollars(tmp_path):
+    """Un pago en USD trae el ticket en dólares: si viniera en pesos, el TPV en COP se inflaría x4000."""
+    import yaml
+
+    from finflow.config import PROJECT_ROOT
+    from finflow.generator import USD_COP
+
+    payments = [p for d in range(5) for p in bank(tmp_path, scale=1).payments(DAY + timedelta(days=d))]
+    usd = [p["amount"] for p in payments if p.get("currency") == "USD" and p["amount"] > 0]
+    cop = sorted(p["amount"] for p in payments if p.get("currency") == "COP" and p["amount"] > 0)
+    assert usd and max(usd) < cop[len(cop) // 2] / 10 and min(usd) >= 1
+    dbt_vars = yaml.safe_load((PROJECT_ROOT / "dbt" / "dbt_project.yml").read_text())["vars"]
+    assert dbt_vars["usd_cop"] == USD_COP

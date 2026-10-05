@@ -186,9 +186,28 @@ class Pipeline:
             path = Path(self.s.path("gold", f"{name}.parquet"))
             counts[name] = duckdb.sql(f"select count(*) from read_parquet('{path}')").fetchone()[0] if path.exists() else 0
         manifest = {"run_id": run_id, "dates": [d.isoformat() for d in dates], "published_at": now(),
-                    "datasets": counts}
+                    "datasets": counts, "kind": self._run_kind(run_id), "quality": self._run_quality(run_id)}
         Path(self.s.path("gold", "_manifest.json")).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         return JobResult(rows_written=sum(counts.values()), details=counts)
+
+    def _run_kind(self, run_id: str) -> str:
+        rows = self.meta.query("SELECT kind FROM runs WHERE run_id = ?", (run_id,))
+        return rows[0]["kind"] if rows else "unknown"
+
+    def _run_quality(self, run_id: str) -> dict:
+        """Lo que silver apartó o corrigió en esta corrida: ATLAS lo muestra junto a sus propios controles."""
+        q = {"quarantined": 0, "duplicates_removed": 0, "late_rows": 0, "quarantine_by_reason": {}}
+        rows = self.meta.query("SELECT rows_quarantined, details FROM task_runs WHERE run_id = ? AND status = 'success' "
+                               "AND task LIKE 'silver.%'", (run_id,))
+        for r in rows:
+            d = json.loads(r["details"] or "{}")
+            q["quarantined"] += r["rows_quarantined"] or 0
+            q["duplicates_removed"] += d.get("duplicates_removed") or 0
+            q["late_rows"] += d.get("late_rows") or 0
+            for reason, n in (d.get("quarantine_reasons") or {}).items():
+                if n:
+                    q["quarantine_by_reason"][reason] = q["quarantine_by_reason"].get(reason, 0) + n
+        return q
 
     def close(self) -> None:
         self.meta.close()

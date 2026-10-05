@@ -338,8 +338,16 @@ function hideTip() { $("#tooltip").hidden = true; }
 // --------------------------------------------------------------------------- eventos
 function openRun(id) {
   state.selectedRun = id; state.follow = id === state.runs[0]?.run_id;
+  history.replaceState(null, "", state.follow ? location.pathname : `#run=${encodeURIComponent(id)}`);
   showView("corrida"); tick();
 }
+// Enlace directo a una corrida (p. ej. desde ATLAS): http://localhost:8100/#run=<run_id>
+function fromHash() {
+  const m = location.hash.match(/^#run=(.+)$/);
+  if (m) { state.selectedRun = decodeURIComponent(m[1]); state.follow = false; }
+}
+addEventListener("hashchange", () => { fromHash(); showView("corrida"); tick(); });
+fromHash();
 function showView(v) {
   state.view = v;
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
@@ -348,7 +356,7 @@ function showView(v) {
 }
 document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
 $("#run-select").addEventListener("change", (e) => openRun(e.target.value));
-$("#btn-follow").addEventListener("click", () => { state.follow = true; tick(); });
+$("#btn-follow").addEventListener("click", () => { state.follow = true; history.replaceState(null, "", location.pathname); tick(); });
 $("#pipeline").addEventListener("click", (e) => {
   const b = e.target.closest(".stage"); if (!b) return;
   state.stage = b.dataset.stage; store.set("finflow.stage", state.stage); render();

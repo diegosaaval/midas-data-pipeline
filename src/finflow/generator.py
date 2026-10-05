@@ -29,6 +29,7 @@ from .config import Settings, get_settings
 
 CITIES = ("Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena", "Bucaramanga", "Pereira", "Manizales")
 CATEGORIES = ("retail", "food", "transport", "marketplace", "services", "travel", "education", "health")
+USD_COP = 4000  # debe coincidir con vars.usd_cop en dbt/dbt_project.yml
 TICKET = {"retail": 120_000, "food": 45_000, "transport": 25_000, "marketplace": 180_000, "services": 150_000,
           "travel": 650_000, "education": 900_000, "health": 220_000}
 N_MERCHANTS = 300
@@ -137,6 +138,8 @@ class Bank:
         }
         if day >= self.s.schema_v2_from:
             row["currency"] = "USD" if r.random() < 0.02 else "COP"
+            if row["currency"] == "USD":  # mismo ticket, expresado en dólares (tasa = var usd_cop de dbt)
+                row["amount"] = max(1.0, round(row["amount"] / USD_COP, 2))
             row["channel"] = r.choices(("app", "web", "pos"), (60, 25, 15))[0]
         return row
 

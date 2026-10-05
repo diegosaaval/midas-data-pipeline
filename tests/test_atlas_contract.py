@@ -27,6 +27,9 @@ def test_manifest_has_the_fields_atlas_reads(lake):
     assert manifest["dates"] and all(datetime.strptime(d, "%Y-%m-%d") for d in manifest["dates"])
     assert isinstance(manifest["run_id"], str) and manifest["run_id"]
     assert set(manifest["datasets"]) == set(ATLAS_COLUMNS)
+    # Campos adicionales (opcionales para ATLAS): tipo de corrida y lo que silver apartó o corrigió.
+    assert manifest["kind"] in {"incremental", "date", "backfill"} or manifest["kind"].startswith("task:")
+    assert {"quarantined", "duplicates_removed", "late_rows", "quarantine_by_reason"} <= set(manifest["quality"])
 
 
 def test_gold_tables_exist_with_the_columns_atlas_checks(lake):

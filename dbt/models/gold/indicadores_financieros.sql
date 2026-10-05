@@ -10,12 +10,12 @@ with pagos as (
     group by 1
 ),
 devoluciones as (
-    select refund_day as fecha, count(*) as devoluciones, sum(amount) as devoluciones_cop
+    select refund_day as fecha, count(*) as devoluciones, sum(amount_cop) as devoluciones_cop
     from {{ ref('fct_refunds') }}
     group by 1
 ),
 contracargos as (
-    select chargeback_day as fecha, count(*) as contracargos, sum(amount) as contracargos_cop
+    select chargeback_day as fecha, count(*) as contracargos, sum(amount_cop) as contracargos_cop
     from {{ ref('fct_chargebacks') }}
     group by 1
 )
