@@ -231,6 +231,8 @@ def write_landing(day: date, settings: Settings | None = None, anomalies: set[st
     `anomalies` permite simular problemas puntuales en demos y pruebas:
     * "unknown_column": la fuente agrega una columna no acordada (promo_code) a pagos.
     * "corrupt_lines": algunas líneas JSON llegan truncadas.
+    * "approval_drop": la pasarela de tarjetas falla y rechaza 2 de cada 3 pagos con tarjeta. Cada registro
+      es válido (el contrato de FINFLOW no lo puede ver); la tasa de aprobación del día cae y ATLAS lo detecta.
     """
     s = settings or get_settings()
     anomalies = anomalies or set()
@@ -240,6 +242,9 @@ def write_landing(day: date, settings: Settings | None = None, anomalies: set[st
         folder.mkdir(parents=True, exist_ok=True)
         lines = []
         for n, row in enumerate(rows):
+            if (entity == "payments" and "approval_drop" in anomalies and row.get("payment_method") == "card"
+                    and row.get("status") == "approved" and n % 3):
+                row = {**row, "status": "declined"}
             if entity == "payments" and "unknown_column" in anomalies:
                 row = {**row, "promo_code": f"PROMO{n % 7}"}
             line = json.dumps(row, ensure_ascii=False)

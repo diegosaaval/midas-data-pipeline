@@ -70,3 +70,18 @@ def test_usd_payments_are_priced_in_dollars(tmp_path):
     assert usd and max(usd) < cop[len(cop) // 2] / 10 and min(usd) >= 1
     dbt_vars = yaml.safe_load((PROJECT_ROOT / "dbt" / "dbt_project.yml").read_text())["vars"]
     assert dbt_vars["usd_cop"] == USD_COP
+
+
+def test_approval_drop_keeps_every_record_valid_but_lowers_the_rate(tmp_path):
+    import json
+    from pathlib import Path
+
+    s = make_settings(tmp_path, scale=1)
+    rate = {}
+    for tag, anomalies in (("normal", set()), ("drop", {"approval_drop"})):
+        write_landing(DAY, s, anomalies)
+        lines = (Path(s.landing) / "payments" / f"ingest_date={DAY}" / "part-00000.jsonl").read_text().splitlines()
+        rows = [json.loads(x) for x in lines]
+        rate[tag] = sum(r["status"] == "approved" for r in rows) / len(rows)
+        assert {r["status"] for r in rows} <= {"approved", "declined", "pending"}  # nada que el contrato rechace
+    assert rate["normal"] > 0.8 and rate["drop"] < rate["normal"] - 0.2

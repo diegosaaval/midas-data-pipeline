@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     g = sub.add_parser("generate", help="Generar archivos de las fuentes en landing")
     g.add_argument("--start", type=_date)
     g.add_argument("--end", type=_date)
-    g.add_argument("--anomaly", action="append", default=[], choices=["unknown_column", "corrupt_lines"])
+    g.add_argument("--anomaly", action="append", default=[], choices=["unknown_column", "corrupt_lines", "approval_drop"])
 
     r = sub.add_parser("run", help="Procesar (incremental por defecto)")
     r.add_argument("--date", type=_date)
