@@ -1,0 +1,49 @@
+# Entorno local completo:  docker compose up --build   ->  Airflow en http://localhost:8080
+# Correr el pipeline sin Airflow:  docker compose run --rm finflow run
+x-finflow-env: &finflow-env
+  FINFLOW_SCALE: ${FINFLOW_SCALE:-0.5}
+  FINFLOW_SIMULATE_SOURCES: "true"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes: ["pg-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 10
+
+  airflow:
+    build: {context: ., dockerfile: docker/Dockerfile}
+    image: finflow-airflow:latest
+    depends_on:
+      postgres: {condition: service_healthy}
+    environment:
+      <<: *finflow-env
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"  # solo para desarrollo local
+    command: standalone
+    ports: ["8080:8080"]
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - lake:/opt/finflow/data
+
+  finflow:
+    image: finflow-airflow:latest
+    depends_on: [airflow]
+    environment: *finflow-env
+    entrypoint: ["finflow"]
+    command: ["status"]
+    volumes: [lake:/opt/finflow/data]
+    profiles: ["cli"]
+
+volumes:
+  pg-data:
+  lake:

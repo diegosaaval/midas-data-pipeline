@@ -1,0 +1,17 @@
+finflow:
+  target: "{{ env_var('FINFLOW_DBT_TARGET', 'local') }}"
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('FINFLOW_DUCKDB', '../data/warehouse/finflow.duckdb') }}"
+      external_root: "{{ env_var('FINFLOW_LAKE', '../data/lake') }}/gold"
+      threads: 4
+    aws:
+      type: athena
+      region_name: "{{ env_var('AWS_REGION', 'us-east-1') }}"
+      s3_staging_dir: "{{ env_var('FINFLOW_ATHENA_RESULTS', 's3://finflow-dev-athena-results/') }}"
+      s3_data_dir: "{{ env_var('FINFLOW_GOLD_S3', 's3://finflow-dev-lake/gold/') }}"
+      database: awsdatacatalog
+      schema: finflow_gold
+      work_group: finflow
+      threads: 4

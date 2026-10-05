@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: Dimensión de clientes (estado actual).
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: risk_segment
+        tests:
+          - accepted_values:
+              arguments: {values: ["low", "medium", "high"]}
+
+  - name: dim_merchants
+    description: Dimensión de comercios (estado actual).
+    columns:
+      - name: merchant_id
+        tests: [unique, not_null]
+
+  - name: fct_payments
+    description: Hecho de pagos (incremental con ventana de reproceso para datos tardíos).
+    columns:
+      - name: payment_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              arguments: {values: ["pending", "approved", "declined"]}
+      - name: merchant_id
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_merchants'), field: merchant_id}
+      - name: amount
+        tests: [not_null]
+
+  - name: fct_refunds
+    description: Devoluciones con el monto del pago original.
+    columns:
+      - name: refund_id
+        tests: [unique, not_null]
+      - name: payment_id
+        description: Puede no existir aún en pagos si el pago llega tarde (se reporta como advertencia).
+        tests:
+          - relationships:
+              arguments: {to: ref('fct_payments'), field: payment_id}
+              config: {severity: warn}
+
+  - name: fct_chargebacks
+    description: Contracargos con el comercio y los días transcurridos desde el pago.
+    columns:
+      - name: chargeback_id
+        tests: [unique, not_null]

@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: silver
+    description: Capa silver escrita por los jobs de PySpark (Parquet particionado por dt).
+    schema: finflow_silver  # en AWS: base de datos del Glue Catalog
+    meta:
+      # Local (DuckDB): leer el Parquet directamente del lake.
+      external_location: "read_parquet('{{ env_var('FINFLOW_LAKE', '../data/lake') }}/silver/{name}/**/*.parquet', hive_partitioning = true, union_by_name = true)"
+    tables:
+      - name: customers
+        description: Estado actual de cada cliente (último registro por customer_id).
+      - name: merchants
+        description: Estado actual de cada comercio.
+      - name: payments
+        description: Pagos deduplicados, particionados por fecha de transacción (dt).
+      - name: refunds
+        description: Devoluciones; payment_found=false indica que el pago original aún no llega.
+      - name: chargebacks
+        description: Contracargos, que llegan entre 5 y 45 días después del pago.
+      - name: payment_features
+        description: Features de riesgo por pago (ventanas de 7 días por cliente).
+      - name: merchant_daily
+        description: KPIs diarios por comercio.

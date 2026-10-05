@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: clientes_gold
+    description: Clientes publicados para consumo.
+    columns:
+      - name: id_cliente
+        tests: [unique, not_null]
+  - name: pagos_gold
+    description: Pagos publicados, con alertas de riesgo.
+    columns:
+      - name: id_pago
+        tests: [unique, not_null]
+  - name: contracargos_gold
+    description: Contracargos publicados.
+    columns:
+      - name: id_contracargo
+        tests: [unique, not_null]
+  - name: indicadores_financieros
+    description: KPIs diarios (TPV, aprobación, devoluciones, contracargos).
+    columns:
+      - name: fecha
+        tests: [unique, not_null]

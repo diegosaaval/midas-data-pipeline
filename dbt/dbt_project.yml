@@ -1,0 +1,24 @@
+name: finflow
+version: "0.1.0"
+config-version: 2
+profile: finflow
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  late_data_days: 7      # ventana de reproceso del modelo incremental (debe cubrir la de silver)
+  usd_cop: 4000          # tasa fija de referencia para normalizar montos en USD
+
+models:
+  finflow:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+    gold:
+      # Local: Parquet en lake/gold (lo que ATLAS monitorea). En Athena: tablas normales.
+      +materialized: "{{ 'external' if target.type == 'duckdb' else 'table' }}"
