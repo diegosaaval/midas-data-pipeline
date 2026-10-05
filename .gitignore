@@ -15,3 +15,4 @@ logs/
 .terraform/
 *.tfstate*
 dbt/.user.yml
+.tools/

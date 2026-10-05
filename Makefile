@@ -1,4 +1,4 @@
-.PHONY: install demo run status test lint dbt-docs clean
+.PHONY: install demo run status ui test lint dbt-docs clean
 
 install:        ## entorno local (requiere Python 3.11-3.13 y Java 17+)
 	uv venv --python 3.12 .venv && uv pip install --python .venv -e ".[dev]"
@@ -14,6 +14,9 @@ run:
 
 status:
 	.venv/bin/finflow status
+
+ui:             ## pantalla de etapas en http://localhost:8100
+	.venv/bin/finflow ui
 
 test:
 	.venv/bin/pytest --cov=finflow --cov-report=term-missing

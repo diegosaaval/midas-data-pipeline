@@ -4,25 +4,10 @@ from pathlib import Path
 
 import duckdb
 import pytest
-from conftest import make_settings
+from conftest import DAYS, make_settings
 
 from finflow.generator import write_landing
-from finflow.pipeline import GOLD_DATASETS, Pipeline, PipelineError, date_range
-
-DAYS = date_range(date(2026, 9, 1), date(2026, 9, 5))
-
-
-@pytest.fixture(scope="module")
-def lake(spark, tmp_path_factory):
-    """Pipeline completo (bronze -> silver -> features -> dbt -> publish) sobre 5 días."""
-    s = make_settings(tmp_path_factory.mktemp("e2e"))
-    for d in DAYS:
-        write_landing(d, s)
-    pipe = Pipeline(s, spark)
-    pipe.backoff_seconds = 0
-    run_id = pipe.run_incremental()
-    yield s, pipe, run_id
-    pipe.close()
+from finflow.pipeline import GOLD_DATASETS, Pipeline, PipelineError
 
 
 def gold_counts(s):

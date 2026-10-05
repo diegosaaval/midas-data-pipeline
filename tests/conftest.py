@@ -5,9 +5,12 @@ from pathlib import Path
 import pytest
 
 from finflow.config import PROJECT_ROOT, Settings
+from finflow.generator import write_landing
+from finflow.pipeline import Pipeline, date_range
 from finflow.spark import get_spark
 
 EPOCH = date(2026, 9, 1)
+DAYS = date_range(EPOCH, date(2026, 9, 5))
 
 
 def make_settings(tmp: Path, **kw) -> Settings:
@@ -23,6 +26,19 @@ def spark():
     s = get_spark(make_settings(Path("/tmp")), app="finflow-tests")
     yield s
     s.stop()
+
+
+@pytest.fixture(scope="session")
+def lake(spark, tmp_path_factory):
+    """Pipeline completo (bronze -> silver -> features -> dbt -> publish) sobre 5 días, compartido por los módulos."""
+    s = make_settings(tmp_path_factory.mktemp("e2e"))
+    for d in DAYS:
+        write_landing(d, s)
+    pipe = Pipeline(s, spark)
+    pipe.backoff_seconds = 0
+    run_id = pipe.run_incremental()
+    yield s, pipe, run_id
+    pipe.close()
 
 
 @pytest.fixture

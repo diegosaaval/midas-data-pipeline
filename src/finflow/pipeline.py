@@ -80,27 +80,32 @@ class Pipeline:
         iso = task.day.isoformat() if task.day else None
         for attempt in range(1, attempts + 1):
             started, t0 = now(), time.perf_counter()
+            row = self.meta.start_task(run_id, task.name, iso, attempt, started)
             try:
                 self._maybe_fail(task.name)
                 result = task.fn()
                 self.meta.record_task(run_id, task.name, iso, attempt, "success", started,
-                                      time.perf_counter() - t0, result)
+                                      time.perf_counter() - t0, result, row=row)
                 log.info("%s %s ok: leídas=%s escritas=%s cuarentena=%s", task.name, iso or "", result.rows_read,
                          result.rows_written, result.rows_quarantined)
                 return result
             except MissingSourceError as exc:  # reintentar no ayuda: la fuente no ha entregado
                 self.meta.record_task(run_id, task.name, iso, attempt, "failed", started,
-                                      time.perf_counter() - t0, error=str(exc))
+                                      time.perf_counter() - t0, error=str(exc), row=row)
                 raise
             except Exception as exc:
                 self.meta.record_task(run_id, task.name, iso, attempt, "failed", started,
-                                      time.perf_counter() - t0, error=f"{type(exc).__name__}: {exc}")
+                                      time.perf_counter() - t0, error=f"{type(exc).__name__}: {exc}", row=row)
                 if attempt == attempts:
                     raise
                 wait = self.backoff_seconds * 2 ** (attempt - 1)
                 log.warning("%s %s falló (intento %s/%s): %s. Reintento en %.0fs", task.name, iso or "", attempt,
                             attempts, exc, wait)
                 time.sleep(wait)
+            except BaseException:  # Ctrl+C: que la tarea no quede como 'running' para siempre
+                self.meta.record_task(run_id, task.name, iso, attempt, "failed", started,
+                                      time.perf_counter() - t0, error="interrumpida", row=row)
+                raise
         raise AssertionError("unreachable")
 
     def _maybe_fail(self, name: str) -> None:
@@ -127,6 +132,9 @@ class Pipeline:
             self.meta.finish_run(run_id, "failed", f"{type(exc).__name__}: {exc}")
             log.debug(traceback.format_exc())
             raise PipelineError(f"Corrida {run_id} falló: {exc}") from exc
+        except BaseException:
+            self.meta.finish_run(run_id, "failed", "interrumpida")
+            raise
 
     def run_incremental(self) -> str | None:
         dates = self.pending_dates()

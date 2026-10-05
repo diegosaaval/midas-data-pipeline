@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FINFLOW · Etapas</title>
+  <meta name="description" content="Cada corrida del pipeline FINFLOW como un diagrama en vivo: etapas, filas, cuarentena, reintentos y planes de ejecución.">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo" src="icon.svg" alt="" width="28" height="28">
+      <span class="brand-name">FINFLOW <span class="muted">Etapas del pipeline</span></span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button data-view="corrida" class="active">Corrida</button>
+      <button data-view="historial">Historial</button>
+    </nav>
+    <div class="controls">
+      <span class="clock" id="live" title="La pantalla se actualiza sola"><i></i><span>conectando…</span></span>
+      <a class="btn primary" id="btn-atlas" target="_blank" rel="noopener" aria-disabled="true">Ver en ATLAS</a>
+      <button class="icon-btn" id="btn-theme" title="Cambiar tema" aria-label="Cambiar tema"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- CORRIDA ------------------------------------------------------------ -->
+    <section class="view active" data-view="corrida">
+      <header class="page-head">
+        <div>
+          <h1 id="run-title">Corrida</h1>
+          <p id="run-sub">Cargando…</p>
+        </div>
+        <div class="controls">
+          <button class="btn small" id="btn-follow" hidden>Seguir la última corrida</button>
+          <select id="run-select" aria-label="Elegir corrida"></select>
+        </div>
+      </header>
+
+      <div class="card" id="empty" hidden>
+        <h3>Todavía no hay corridas</h3>
+        <p class="muted">Esta pantalla solo lee los metadatos del pipeline. Corre FINFLOW en una terminal y mira cómo avanza aquí, en vivo:</p>
+        <pre class="cmd">make demo</pre>
+        <p class="muted small">o paso a paso: <code>finflow generate --start 2026-09-01 --end 2026-09-30</code> y luego <code>finflow run</code>.</p>
+      </div>
+
+      <div class="card pipeline-card" id="pipeline-card" hidden>
+        <div class="card-head">
+          <h3>Pipeline</h3>
+          <span class="muted small" id="pipeline-hint">Haz clic en una etapa para ver su detalle</span>
+        </div>
+        <div class="pipeline" id="pipeline"></div>
+        <div class="run-error" id="run-error" hidden></div>
+      </div>
+
+      <div class="grid-2" id="lower" hidden>
+        <div class="card" id="detail"></div>
+        <div class="side">
+          <div class="card" id="quality"></div>
+          <div class="card" id="publication"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL ---------------------------------------------------------- -->
+    <section class="view" data-view="historial">
+      <header class="page-head"><div><h1>Historial</h1><p>Incrementales, backfills y re-procesos, de la más reciente a la más antigua.</p></div></header>
+      <div class="card">
+        <div class="card-head"><h3>Duración por etapa</h3><span class="muted small" id="chart-note"></span></div>
+        <div class="legend" id="legend"></div>
+        <div class="chart" id="chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Corridas</h3><span class="muted small">clic para abrir</span></div>
+        <div class="table-wrap"><table class="runs" id="runs"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="tooltip" id="tooltip" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -58,6 +58,14 @@ Un marketplace concentra ~25% de los pagos. En la agregación por comercio esa l
 
 Corridas, tareas (duración, filas leídas/escritas/en cuarentena, particiones, intentos, errores), eventos de esquema y watermark se guardan en SQLite: cero infraestructura en local. En AWS lo natural es una tabla en Postgres/RDS o DynamoDB, o eventos en CloudWatch. La interfaz (`Metadata`) aísla ese cambio.
 
+## 12. Pantalla de etapas: solo lectura y refresco cada segundo
+
+**Decisión.** La pantalla lee el mismo SQLite de metadatos (abierto en modo `ro`) y el navegador consulta la API cada segundo mientras hay una corrida en curso, y cada 4 segundos si no. Para que se vea la etapa *corriendo*, el runner registra cada intento al empezar (`status = 'running'`) y lo actualiza al terminar; si se interrumpe con Ctrl+C, queda como fallido con el error "interrumpida".
+
+**Por qué no WebSocket.** El estado cambia a la escala de segundos (una tarea dura entre 0,1 s y 30 s) y la fuente es una base que escribe otro proceso: un WebSocket igual tendría que consultar la base en un ciclo. El refresco es más simple, sobrevive a reinicios del servidor y no agrega piezas.
+
+**Por qué solo lectura.** La pantalla observa; no puede lanzar ni cambiar corridas. Así nunca compite con Airflow ni con el CLI por el mismo lake.
+
 ## Lo que NO se hizo a propósito
 
 - **Kafka/streaming:** el negocio consume indicadores diarios; un batch diario idempotente es más simple, barato y fácil de operar.

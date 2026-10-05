@@ -5,6 +5,7 @@
   finflow run --date 2026-09-10                         # re-procesa un día (idempotente)
   finflow backfill --start 2026-09-05 --end 2026-09-08  # re-procesa un rango
   finflow status                                        # últimas corridas y métricas
+  finflow ui                                            # pantalla de etapas en http://localhost:8100
 """
 
 from __future__ import annotations
@@ -49,6 +50,11 @@ def main(argv: list[str] | None = None) -> int:
     st = sub.add_parser("status", help="Últimas corridas y métricas por tarea")
     st.add_argument("--limit", type=int, default=5)
 
+    u = sub.add_parser("ui", help="Pantalla de etapas (solo lectura) en el navegador")
+    u.add_argument("--port", type=int, default=8100)
+    u.add_argument("--host", default="127.0.0.1")
+    u.add_argument("--no-browser", action="store_true")
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
@@ -64,6 +70,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "status":
         return _status(s, args.limit)
+
+    if args.cmd == "ui":
+        return _ui(args.host, args.port, not args.no_browser)
 
     pipe = Pipeline(s)
     try:
@@ -137,6 +146,23 @@ def _status(s, limit: int) -> int:
         for e in events:
             print(f"    {e['ingest_date']} {e['entity']}: {e['kind']} {e['columns']}")
     meta.close()
+    return 0
+
+
+def _ui(host: str, port: int, open_browser: bool) -> int:
+    try:
+        import uvicorn
+    except ImportError:
+        print("Falta la pantalla: instala con  pip install -e '.[ui]'", file=sys.stderr)
+        return 1
+    url = f"http://localhost:{port}/"
+    print(f"FINFLOW · Etapas en {url}  (Ctrl+C para cerrar)")
+    if open_browser:
+        import threading
+        import webbrowser
+
+        threading.Timer(1.0, webbrowser.open, args=(url,)).start()
+    uvicorn.run("finflow.ui.api:app", host=host, port=port, log_level="warning")
     return 0
 
 

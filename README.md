@@ -6,12 +6,12 @@
 ![pyspark](https://img.shields.io/badge/PySpark-4.x-orange)
 ![dbt](https://img.shields.io/badge/dbt-duckdb%20%7C%20athena-ff694b)
 ![airflow](https://img.shields.io/badge/Airflow-3.x-017cee)
-![tests](https://img.shields.io/badge/tests-31%20pasando-brightgreen)
-![coverage](https://img.shields.io/badge/cobertura-97%25-brightgreen)
+![tests](https://img.shields.io/badge/tests-44%20pasando-brightgreen)
+![coverage](https://img.shields.io/badge/cobertura-95%25-brightgreen)
 
 > 🇬🇧 *FINFLOW is a daily batch pipeline for synthetic fintech data (customers, merchants, payments, refunds, chargebacks): landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills and run metrics. Runs locally today; designed for S3 + Glue + Athena.*
 
-Proyecto complementario de [ATLAS](https://github.com/<tu-usuario>/atlas-one): **FINFLOW construye los datos, ATLAS verifica que sean confiables.**
+Proyecto complementario de [ATLAS](https://github.com/diegosaaval/atlas-data-quality): **FINFLOW construye los datos, ATLAS verifica que sean confiables.**
 
 ---
 
@@ -89,7 +89,32 @@ flowchart LR
 | Duración total (bronze → gold) | 2 min 42 s |
 | Reintentos | 1 falla transitoria simulada en `silver.payments`, recuperada sola |
 
-`finflow status` muestra estas métricas por tarea: duración, filas leídas, escritas, en cuarentena y fallos reintentados.
+`finflow status` muestra estas métricas por tarea en la terminal; la **pantalla de etapas** las muestra como un diagrama en vivo.
+
+## Pantalla de etapas
+
+Cada corrida se ve como un pipeline: `Fuentes → Bronze → Silver → Features → dbt build → Publicación`.
+
+- **Una tarjeta por etapa** con su estado (en espera, corriendo, OK, reintento, falla), duración y filas leídas, escritas y en cuarentena. Mientras la corrida avanza, la etapa activa se anima y las filas fluyen de una capa a la siguiente (se actualiza cada segundo).
+- **Detalle al hacer clic:** tareas por entidad y fecha, particiones reescritas, reintentos con su error, eventos de esquema y los *explain plans* de Spark guardados en `data/meta/plans/`.
+- **Calidad en el camino:** registros en cuarentena por motivo, duplicados eliminados y filas tardías integradas.
+- **Historial:** incrementales, backfills y re-procesos, con un gráfico de duración por etapa a lo largo del tiempo.
+- **Ver en ATLAS:** se habilita cuando termina la publicación.
+
+Cómo abrirla:
+
+- **Doble clic** en `Iniciar FINFLOW.command` (Mac) o `Iniciar FINFLOW.bat` (Windows). La primera vez instala todo, crea un acceso directo «FINFLOW» con su ícono en el escritorio y, si no hay datos, corre la demo de 30 días para que la veas avanzar.
+- **Terminal:** `finflow ui` (o `make ui`) y luego `finflow run` en otra terminal.
+
+La pantalla **solo lee** `data/meta/finflow.db` (tablas `runs`, `task_runs`, `schema_events`, `watermarks`), que se abre en modo de solo lectura: no cambia nada del pipeline. Es FastAPI más HTML, CSS y JavaScript sin compilación, con gráficos SVG propios, modo claro y oscuro. API documentada en `http://localhost:8100/docs`.
+
+## Monitoreado por ATLAS
+
+FINFLOW construye los datos; [ATLAS](https://github.com/diegosaaval/atlas-data-quality) verifica que sean confiables. ATLAS lee las cuatro tablas gold (`data/lake/gold/*.parquet`) y vigila `_manifest.json`: cada vez que FINFLOW publica, ATLAS valida las fechas nuevas con sus reglas (montos, estados, tasas entre 0 y 1, documentos, contracargos).
+
+Para conectarlo, abre ATLAS y elige **FINFLOW** en su botón *Fuente de datos*, o arráncalo con `./start.sh --fuente finflow`.
+
+**Contrato.** Cada publicación mantiene en el manifiesto `published_at` (ISO 8601 con zona horaria), `dates`, `run_id` y `datasets` (filas por tabla), y las columnas sobre las que ATLAS tiene reglas. `tests/test_atlas_contract.py` lo verifica: si un cambio lo rompe, el CI falla antes de que el monitoreo se entere.
 
 ## Cómo correrlo
 
@@ -98,6 +123,7 @@ flowchart LR
 ```bash
 make install     # crea .venv con uv e instala el paquete
 make demo        # genera 30 días, corre el pipeline completo y muestra el estado
+make ui          # abre la pantalla de etapas en http://localhost:8100
 ```
 
 Comandos útiles:
@@ -122,10 +148,10 @@ docker compose run --rm finflow status    # CLI dentro del contenedor
 ## Cómo se prueba
 
 ```bash
-make test        # 29 tests (PySpark + dbt reales) · cobertura 97%
+make test        # 42 tests (PySpark + dbt reales + API de la pantalla) · cobertura 95%
 ```
 
-Cada problema de ingeniería tiene un test con datos construidos a mano: cuarentena por motivo, dedup, datos tardíos sin tocar otras particiones (se verifica la fecha de modificación de los archivos), idempotencia, evolución de esquema, reglas entre entidades, partition pruning en el plan físico, reintentos, fallas permanentes, backfill sin mover el watermark y fuente faltante sin reintento. El DAG se valida contra Airflow 3 real en CI.
+Cada problema de ingeniería tiene un test con datos construidos a mano: cuarentena por motivo, dedup, datos tardíos sin tocar otras particiones (se verifica la fecha de modificación de los archivos), idempotencia, evolución de esquema, reglas entre entidades, partition pruning en el plan físico, reintentos, fallas permanentes, backfill sin mover el watermark y fuente faltante sin reintento. La API de la pantalla tiene sus propios tests (estado de cada etapa en vivo, reintentos, fallas, corridas interrumpidas, solo lectura) y el contrato con ATLAS se valida sobre una corrida real. El DAG se valida contra Airflow 3 real en CI.
 
 CI (GitHub Actions): ruff, pytest con Spark y dbt, `dbt parse`, prueba del DAG y build de la imagen Docker.
 
@@ -153,10 +179,12 @@ src/finflow/
   pipeline.py       runner: incremental, por fecha, backfill, reintentos, dbt, publicación
   metadata.py       registro de corridas, tareas, eventos de esquema y watermark
   cli.py            interfaz de línea de comandos (la usa Airflow)
+  ui/               pantalla de etapas: API de solo lectura (FastAPI) + web/ (HTML, CSS, JS)
 dbt/                proyecto dbt (perfiles DuckDB local y Athena)
 airflow/dags/       DAG diario
 docker/             imagen de Airflow con Java + finflow
-tests/              31 tests
+tests/              44 tests
+run.py              lanzador de doble clic (Iniciar FINFLOW.command / .bat)
 ```
 
 ## Roadmap
@@ -166,7 +194,8 @@ tests/              31 tests
 - [ ] **Fase 3: Terraform.** Buckets (cifrado, bloqueo público, ciclo de vida), roles IAM de mínimo privilegio, bases de Glue y workgroup de Athena.
 - [ ] **Fase 4: dbt en Athena.** Marts financieros incrementales sobre Iceberg.
 - [ ] **Fase 5: optimización.** Métricas de costo por corrida, compactación y comparación de planes.
-- [ ] **Fase 6: integración con ATLAS.** ATLAS monitorea los cuatro datasets gold que publica FINFLOW.
+- [x] **Fase 6: integración con ATLAS.** ATLAS monitorea los cuatro datasets gold que publica FINFLOW (contrato probado en CI).
+- [x] **Pantalla de etapas.** Cada corrida como un diagrama en vivo, con detalle, calidad e historial.
 
 ## Licencia
 
