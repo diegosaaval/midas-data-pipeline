@@ -3,7 +3,8 @@
 install:        ## entorno local (requiere Python 3.11-3.13 y Java 17+)
 	uv venv --python 3.12 .venv && uv pip install --python .venv -e ".[dev]"
 
-demo:           ## genera 30 días de fuentes y corre el pipeline completo
+demo:           ## desde cero: genera 30 días de fuentes y corre el pipeline completo
+	rm -rf data
 	.venv/bin/finflow generate --start 2026-09-01 --end 2026-09-30
 	.venv/bin/finflow run
 	.venv/bin/finflow status --limit 1
