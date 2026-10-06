@@ -12,8 +12,6 @@
 ![coverage](https://img.shields.io/badge/cobertura-93%25-brightgreen)
 ![license](https://img.shields.io/badge/licencia-MIT-lightgrey)
 
-[![Ver el video de MIDAS (2 min)](media/miniatura-midas.png)](https://youtu.be/KFIgQx3N6a8)
-
 ![Pantalla de etapas de MIDAS: un mes procesado con un reintento, cuarentena por motivo y todas las etapas en verde](docs/img/etapas.png)
 
 > 🇬🇧 *MIDAS turns raw fintech data (customers, merchants, payments, refunds, chargebacks) into trusted gold tables: landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills, run metrics and a live stage view. Monitored by [ATLAS](https://github.com/diegosaaval/atlas-data-quality).*
@@ -33,7 +31,7 @@
 
 🟢 **Demo en vivo:** [MIDAS · pantalla de etapas](https://midas-data-pipeline.onrender.com) + [ATLAS validándolo](https://atlas-midas.onrender.com) *(si llevan rato sin visitas, tardan cerca de un minuto en despertar)*
 
-La demo web es una **vitrina**: Spark no cabe en un servidor gratuito, así que la pantalla de MIDAS repite en bucle una corrida real grabada (el mes con su reintento y el día en que se cae la pasarela, unos 4 minutos) y publica sus tablas gold y su manifiesto en `/vitrina/gold/`. ATLAS las lee por internet como si MIDAS estuviera corriendo: valida septiembre en verde, abre el incidente del 1 de octubre y su botón vuelve a la corrida que lo trajo. [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/diegosaaval/midas-data-pipeline) despliega los dos servicios (`render.yaml`).
+La demo web es una **vitrina**: Spark no cabe en un servidor gratuito, así que la pantalla de MIDAS repite en bucle una corrida real grabada (el mes con su reintento y el día en que se cae la pasarela, unos 4 minutos) y publica sus tablas gold y su manifiesto en `/vitrina/gold/`. ATLAS las lee por internet como si MIDAS estuviera corriendo: valida septiembre en verde, abre el incidente del 1 de octubre y su botón vuelve a la corrida que lo trajo. Los dos servicios están definidos en `render.yaml`.
 
 **Pruébalo tú mismo: la historia completa, con las dos pantallas.** Clona los dos repositorios lado a lado:
 
@@ -114,16 +112,16 @@ flowchart LR
 
 ## Resultados de una corrida real (local)
 
-34 días (1 sep – 4 oct), escala 1.0, MacBook, Spark local:
+Septiembre completo (30 días), escala 1.0, MacBook, Spark local. Es la corrida de los videos y de la demo web:
 
 | Métrica | Valor |
 |---|---|
-| Registros de pagos leídos | 147.441 |
-| Enviados a cuarentena | 476 pagos + 10 devoluciones |
-| Duplicados eliminados | 1.427 |
-| Filas tardías integradas a su fecha | 10.766 |
-| Pagos en gold | 138.753 |
-| Duración total (bronze → gold) | 2 min 42 s |
+| Archivos de las fuentes | 150 (5 sistemas × 30 días), 134 mil líneas |
+| Enviados a cuarentena, cada uno con su motivo | 425 (418 pagos + 7 devoluciones) |
+| Duplicados eliminados | 1.257 |
+| Filas tardías integradas a su fecha | 9.444 |
+| Pagos publicados en gold | 122.564 |
+| Duración total (bronze → gold) | 2 min 53 s, incluido un reintento |
 | Reintentos | 1 falla transitoria simulada en `silver.payments`, recuperada sola |
 
 `midas status` muestra estas métricas por tarea en la terminal; la **pantalla de etapas** las muestra como un diagrama en vivo.
@@ -192,12 +190,11 @@ make test        # 54 tests (PySpark + dbt reales + API de la pantalla + show) �
 
 Cada problema de ingeniería tiene un test con datos construidos a mano: cuarentena por motivo, dedup, datos tardíos sin tocar otras particiones (se verifica la fecha de modificación de los archivos), idempotencia, evolución de esquema, reglas entre entidades, partition pruning en el plan físico, reintentos, fallas permanentes, backfill sin mover el watermark y fuente faltante sin reintento. La API de la pantalla tiene sus propios tests (estado de cada etapa en vivo, reintentos, fallas, corridas interrumpidas, solo lectura) y el contrato con ATLAS se valida sobre una corrida real. El DAG se valida contra Airflow 3 real en CI.
 
-CI (GitHub Actions): ruff, pytest con Spark y dbt (cobertura mínima 90%), `dbt parse`, prueba del DAG, `pip-audit`, CodeQL y build de la imagen Docker. Dependabot mantiene las dependencias al día. Detalle de seguridad en [SECURITY.md](SECURITY.md).
+CI (GitHub Actions): ruff, pytest con Spark y dbt (cobertura mínima 90%), `dbt parse`, prueba del DAG contra Airflow 3, `pip-audit`, CodeQL y build de las dos imágenes Docker (Airflow y la vitrina, con prueba de humo). Las alertas de seguridad de GitHub vigilan las dependencias. Detalle en [SECURITY.md](SECURITY.md).
 
 ## Costos (diseño en AWS)
 
 Con el volumen de este proyecto el costo es casi nulo. Medido: 34 días ocupan 38 MB de JSON crudo y 29 MB en el lake en Parquet (bronze + silver + gold).
-
 
 - **S3**: centavos de dólar al mes; reglas de ciclo de vida mandan bronze antiguo a almacenamiento infrecuente.
 - **Glue**: jobs PySpark de 2 DPU por ~3 minutos al día ≈ 0,1 DPU-hora × USD 0,44 ≈ **USD 0,04 por corrida** (~USD 1,3 al mes). Es el componente dominante.
@@ -223,7 +220,8 @@ src/midas/
   ui/vitrina.py     demo web: repite en bucle una corrida real y publica gold para ATLAS
 dbt/                proyecto dbt (perfiles DuckDB local y Athena)
 airflow/dags/       DAG diario
-docker/             imagen de Airflow con Java + midas
+docker/             imagen de Airflow con Java + midas, e imagen liviana de la vitrina
+render.yaml         demo web: la vitrina de MIDAS + ATLAS leyéndola por URL
 tests/              56 tests
 vitrina/            la corrida grabada que repite la demo web (~6 MB)
 run.py              lanzador de doble clic (Iniciar MIDAS.command / .bat)
@@ -232,12 +230,19 @@ run.py              lanzador de doble clic (Iniciar MIDAS.command / .bat)
 ## Roadmap
 
 - [x] **Fase 1: MVP local.** Generador, PySpark bronze/silver/features, dbt gold, Airflow, Docker, tests y CI.
+- [x] **Integración con ATLAS.** ATLAS monitorea los cuatro datasets gold que publica MIDAS (contrato probado en CI).
+- [x] **Pantalla de etapas.** Cada corrida como un diagrama en vivo, con detalle, calidad e historial.
+- [x] **Demo web.** Vitrina en Render conectada con ATLAS, y videos.
 - [ ] **Fase 2: AWS.** Lake en S3 (`s3a://`), tablas en Glue Catalog, consultas en Athena (perfil `aws` de dbt ya definido).
 - [ ] **Fase 3: Terraform.** Buckets (cifrado, bloqueo público, ciclo de vida), roles IAM de mínimo privilegio, bases de Glue y workgroup de Athena.
 - [ ] **Fase 4: dbt en Athena.** Marts financieros incrementales sobre Iceberg.
 - [ ] **Fase 5: optimización.** Métricas de costo por corrida, compactación y comparación de planes.
-- [x] **Fase 6: integración con ATLAS.** ATLAS monitorea los cuatro datasets gold que publica MIDAS (contrato probado en CI).
-- [x] **Pantalla de etapas.** Cada corrida como un diagrama en vivo, con detalle, calidad e historial.
+
+## Autor
+
+**Diego S** · Data Engineer · [GitHub](https://github.com/diegosaaval) · [LinkedIn](https://www.linkedin.com/in/diegosaaval/)
+
+Proyecto personal con datos 100% sintéticos.
 
 ## Licencia
 
