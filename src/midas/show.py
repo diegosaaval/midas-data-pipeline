@@ -53,6 +53,21 @@ def _post(url: str, body: dict) -> bool:
         return False
 
 
+def _quiet_spark(settings: Settings):
+    """Arranca Spark con el stderr del proceso apuntando a /dev/null: la JVM lo hereda y sus avisos de
+    arranque no ensucian la narración (los errores del pipeline siguen llegando por logging de Python)."""
+    from .spark import get_spark
+
+    saved, devnull = os.dup(2), os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull, 2)
+    try:
+        return get_spark(settings)
+    finally:
+        os.dup2(saved, 2)
+        os.close(saved)
+        os.close(devnull)
+
+
 class Show:
     def __init__(self, auto: bool, ui_port: int, atlas_url: str, settings: Settings | None = None) -> None:
         self.auto = auto
@@ -61,6 +76,7 @@ class Show:
         self.atlas = atlas_url.rstrip("/")
         self.s = settings or get_settings()
         self.server: subprocess.Popen | None = None
+        self.spark = None
 
     # ------------------------------------------------------------------ narración
     def say(self, text: str = "") -> None:
@@ -121,11 +137,12 @@ class Show:
         self.say("Cada día llegan archivos de 5 sistemas: clientes, comercios, pagos, devoluciones y contracargos.")
         self.say("Vienen con problemas reales: pagos repetidos, montos inválidos, datos que llegan tarde.")
         reset_workspace(self.s)  # conserva la última publicación gold: ATLAS nunca ve un hueco
+        self.spark = _quiet_spark(self.s)
         for day in date_range(*DAYS):
             write_landing(day, self.s)
         self.say("Fuentes listas: del 1 al 30 de septiembre. Mira la pantalla de MIDAS: cada etapa se enciende.")
         t0 = time.time()
-        pipe = Pipeline(self.s)
+        pipe = Pipeline(self.s, self.spark)
         try:
             run_id = pipe.run_incremental()
             q = json.loads(Path(self.s.path("gold", "_manifest.json")).read_text())["quality"]
@@ -148,7 +165,7 @@ class Show:
         self.say("monto correcto, cliente existente. Ninguna regla por registro tiene nada que objetar.")
         known = {i["id"] for i in self.atlas_incidents()} if atlas_ok else set()
         write_landing(INCIDENT_DAY, self.s, {"approval_drop"})
-        pipe = Pipeline(self.s)
+        pipe = Pipeline(self.s, self.spark)
         try:
             run_id = pipe.run_incremental()
         finally:
