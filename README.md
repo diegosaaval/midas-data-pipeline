@@ -2,12 +2,19 @@
 
 **Convierte los datos crudos de una fintech en tablas gold confiables: landing → bronze → silver con PySpark → gold con dbt, orquestado con Airflow.**
 
+[![ci](https://github.com/diegosaaval/midas-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/diegosaaval/midas-data-pipeline/actions/workflows/ci.yml)
+[![codeql](https://github.com/diegosaaval/midas-data-pipeline/actions/workflows/codeql.yml/badge.svg)](https://github.com/diegosaaval/midas-data-pipeline/actions/workflows/codeql.yml)
 ![python](https://img.shields.io/badge/python-3.11--3.13-blue)
 ![pyspark](https://img.shields.io/badge/PySpark-4.x-orange)
 ![dbt](https://img.shields.io/badge/dbt-duckdb%20%7C%20athena-ff694b)
 ![airflow](https://img.shields.io/badge/Airflow-3.x-017cee)
 ![tests](https://img.shields.io/badge/tests-56%20pasando-brightgreen)
 ![coverage](https://img.shields.io/badge/cobertura-93%25-brightgreen)
+![license](https://img.shields.io/badge/licencia-MIT-lightgrey)
+
+[![Ver el video de MIDAS (2 min)](media/miniatura-midas.png)](https://youtu.be/KFIgQx3N6a8)
+
+![Pantalla de etapas de MIDAS: un mes procesado con un reintento, cuarentena por motivo y todas las etapas en verde](docs/img/etapas.png)
 
 > 🇬🇧 *MIDAS turns raw fintech data (customers, merchants, payments, refunds, chargebacks) into trusted gold tables: landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills, run metrics and a live stage view. Monitored by [ATLAS](https://github.com/diegosaaval/atlas-data-quality).*
 

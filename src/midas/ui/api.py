@@ -321,7 +321,7 @@ def create_app(settings: Settings | None = None, vitrina: str | None = None) -> 
         store = Store(settings)
     atlas_url = os.getenv("MIDAS_ATLAS_URL", "http://localhost:8000")
     atlas_cache: dict = {}
-    app = FastAPI(title="MIDAS · Etapas", version="0.1.0",
+    app = FastAPI(title="MIDAS · Etapas", version="1.0.0",
                   description="Solo lectura sobre los metadatos del pipeline MIDAS.")
 
     @app.middleware("http")
