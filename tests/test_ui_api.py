@@ -186,3 +186,11 @@ def test_real_pipeline_run_is_all_green(lake):
     assert st["landing"]["done"] == st["landing"]["expected"] == 25
     assert st["silver"]["rows_read"] > 0 and body["plans"]
     assert body["quality"]["duplicates_removed"] > 0
+
+
+def test_security_headers(tmp_path):
+    client = TestClient(create_app(make_settings(tmp_path)))
+    page = client.get("/")
+    assert page.headers["X-Frame-Options"] == "DENY" and page.headers["X-Content-Type-Options"] == "nosniff"
+    assert "script-src 'self'" in page.headers["Content-Security-Policy"]
+    assert "Content-Security-Policy" not in client.get("/docs").headers  # Swagger UI necesita su CDN

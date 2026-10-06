@@ -9,7 +9,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}  # solo local: Postgres no expone puertos
       POSTGRES_DB: airflow
     volumes: ["pg-data:/var/lib/postgresql/data"]
     healthcheck:
@@ -24,13 +24,13 @@ services:
       postgres: {condition: service_healthy}
     environment:
       <<: *midas-env
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${POSTGRES_PASSWORD:-airflow}@postgres/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"  # solo para desarrollo local
     command: standalone
-    ports: ["8080:8080"]
+    ports: ["127.0.0.1:8080:8080"]  # sin autenticación: solo en este equipo, nunca en la red
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - lake:/opt/midas/data

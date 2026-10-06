@@ -35,6 +35,15 @@ STAGES = (  # (clave, nombre, prefijo de tarea en task_runs)
 )
 KIND_LABELS = {"incremental": "Incremental", "backfill": "Backfill", "date": "Re-proceso"}
 STALE_SECONDS = 30 * 60  # una corrida "running" sin actividad en 30 min murió sin cerrar su registro
+SECURITY_HEADERS = {
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
+# Solo recursos propios; los estilos en línea son atributos style= que fija app.js (anchos de barras).
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+       "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 PLAN_NAME = re.compile(r"^[a-z_]+_\d{4}-\d{2}-\d{2}\.txt$")
 
 
@@ -294,6 +303,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     atlas_cache: dict = {}
     app = FastAPI(title="MIDAS · Etapas", version="0.1.0",
                   description="Solo lectura sobre los metadatos del pipeline MIDAS.")
+
+    @app.middleware("http")
+    async def security_headers(request, call_next):
+        response = await call_next(request)
+        response.headers.update(SECURITY_HEADERS)
+        if not request.url.path.startswith(("/docs", "/redoc")):  # Swagger UI carga sus scripts desde un CDN
+            response.headers["Content-Security-Policy"] = CSP
+        return response
 
     @app.get("/healthz")
     def healthz() -> dict:
