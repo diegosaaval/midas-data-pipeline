@@ -195,19 +195,7 @@ class Pipeline:
         return rows[0]["kind"] if rows else "unknown"
 
     def _run_quality(self, run_id: str) -> dict:
-        """Lo que silver apartó o corrigió en esta corrida: ATLAS lo muestra junto a sus propios controles."""
-        q = {"quarantined": 0, "duplicates_removed": 0, "late_rows": 0, "quarantine_by_reason": {}}
-        rows = self.meta.query("SELECT rows_quarantined, details FROM task_runs WHERE run_id = ? AND status = 'success' "
-                               "AND task LIKE 'silver.%'", (run_id,))
-        for r in rows:
-            d = json.loads(r["details"] or "{}")
-            q["quarantined"] += r["rows_quarantined"] or 0
-            q["duplicates_removed"] += d.get("duplicates_removed") or 0
-            q["late_rows"] += d.get("late_rows") or 0
-            for reason, n in (d.get("quarantine_reasons") or {}).items():
-                if n:
-                    q["quarantine_by_reason"][reason] = q["quarantine_by_reason"].get(reason, 0) + n
-        return q
+        return run_quality(self.meta, run_id)
 
     def close(self) -> None:
         self.meta.close()
@@ -220,6 +208,22 @@ def _parse_faults(raw: str) -> dict[str, int]:
         name, _, n = item.partition(":")
         faults[name] = int(n or 1)
     return faults
+
+
+def run_quality(meta: Metadata, run_id: str) -> dict:
+    """Lo que silver apartó o corrigió en una corrida: ATLAS lo muestra junto a sus propios controles."""
+    q = {"quarantined": 0, "duplicates_removed": 0, "late_rows": 0, "quarantine_by_reason": {}}
+    rows = meta.query("SELECT rows_quarantined, details FROM task_runs WHERE run_id = ? AND status = 'success' "
+                      "AND task LIKE 'silver.%'", (run_id,))
+    for r in rows:
+        d = json.loads(r["details"] or "{}")
+        q["quarantined"] += r["rows_quarantined"] or 0
+        q["duplicates_removed"] += d.get("duplicates_removed") or 0
+        q["late_rows"] += d.get("late_rows") or 0
+        for reason, n in (d.get("quarantine_reasons") or {}).items():
+            if n:
+                q["quarantine_by_reason"][reason] = q["quarantine_by_reason"].get(reason, 0) + n
+    return q
 
 
 def reset_workspace(settings: Settings) -> None:

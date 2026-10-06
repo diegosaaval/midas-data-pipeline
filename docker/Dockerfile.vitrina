@@ -1,0 +1,16 @@
+# Demo web de MIDAS (modo vitrina): la pantalla de etapas repitiendo una corrida real grabada.
+# Sin Java ni Spark: solo la API de solo lectura y el paquete vitrina/ (~6 MB).
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    MIDAS_VITRINA=/app/vitrina
+RUN useradd --create-home --uid 10001 midas
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install --no-deps . && pip install "fastapi>=0.110" "uvicorn>=0.29"
+COPY vitrina ./vitrina
+USER midas
+EXPOSE 8100
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s \
+  CMD python -c "import os, urllib.request; urllib.request.urlopen(f\"http://localhost:{os.getenv('PORT', '8100')}/healthz\")" || exit 1
+CMD ["sh", "-c", "exec uvicorn midas.ui.api:app --host 0.0.0.0 --port ${PORT:-8100} --proxy-headers --forwarded-allow-ips='*'"]

@@ -66,6 +66,14 @@ Corridas, tareas (duración, filas leídas/escritas/en cuarentena, particiones, 
 
 **Por qué solo lectura.** La pantalla observa; no puede lanzar ni cambiar corridas. Así nunca compite con Airflow ni con el CLI por el mismo lake.
 
+## 13. Demo web: una vitrina que repite una corrida real
+
+**Decisión.** La demo pública no corre Spark: reproduce en bucle una corrida real grabada (`midas vitrina`) con la misma pantalla y la misma API. El tiempo de la grabación se proyecta al presente y las tablas gold con su manifiesto se publican en `/vitrina/gold/` según el momento del bucle, así ATLAS (otro servicio) las valida por internet como si MIDAS estuviera corriendo.
+
+**Por qué.** Spark necesita más de 1 GB de memoria y el plan gratuito de Render da 512 MB; pagar un servidor para una demo de portafolio no se justifica. Inventar datos para la web tampoco: todo lo que se ve ocurrió de verdad, y la pantalla lo dice.
+
+**Trade-off.** La web no procesa datos nuevos; para eso está la demo local (`Ver demo MIDAS + ATLAS`). La repetición va a velocidad real para que horas y duraciones sean coherentes, y `published_at` se calcula por ciclo para que ATLAS vea una sola publicación por vuelta.
+
 ## Lo que NO se hizo a propósito
 
 - **Kafka/streaming:** el negocio consume indicadores diarios; un batch diario idempotente es más simple, barato y fácil de operar.

@@ -107,6 +107,8 @@ function renderHeader() {
 function renderAtlas() {
   const btn = $("#btn-atlas"), m = state.meta, run = state.run;
   if (!m) return;
+  $("#vitrina-bar").hidden = !m.vitrina;
+  $("#vitrina-atlas").href = m.atlas_url;
   btn.href = m.atlas_url;
   const ready = run ? run.publish_ok : !!m.manifest;
   btn.setAttribute("aria-disabled", ready ? "false" : "true");

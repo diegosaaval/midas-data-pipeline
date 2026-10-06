@@ -1,0 +1,157 @@
+== Physical Plan ==
+AdaptiveSparkPlan (28)
++- Project (27)
+   +- Filter (26)
+      +- Window (25)
+         +- Sort (24)
+            +- Project (23)
+               +- Window (22)
+                  +- Sort (21)
+                     +- Project (20)
+                        +- Window (19)
+                           +- Sort (18)
+                              +- Project (17)
+                                 +- Window (16)
+                                    +- Sort (15)
+                                       +- Exchange (14)
+                                          +- Project (13)
+                                             +- BroadcastHashJoin LeftOuter BuildRight (12)
+                                                :- Project (8)
+                                                :  +- BroadcastHashJoin LeftOuter BuildRight (7)
+                                                :     :- Project (3)
+                                                :     :  +- Filter (2)
+                                                :     :     +- Scan parquet  (1)
+                                                :     +- BroadcastExchange (6)
+                                                :        +- Filter (5)
+                                                :           +- Scan parquet  (4)
+                                                +- BroadcastExchange (11)
+                                                   +- Filter (10)
+                                                      +- Scan parquet  (9)
+
+
+(1) Scan parquet 
+Output [7]: [payment_id#32651, customer_id#32652, merchant_id#32653, amount#32654, transaction_date#32656, status#32657, dt#32664]
+Batched: true
+Location: InMemoryFileIndex [file:/Users/dsaavedr/Downloads/midas-data-pipeline/data/lake/silver/payments]
+PartitionFilters: [isnotnull(dt#32664), (dt#32664 >= 2026-09-04), (dt#32664 <= 2026-09-11)]
+PushedFilters: [IsNotNull(status), EqualTo(status,approved)]
+ReadSchema: struct<payment_id:string,customer_id:string,merchant_id:string,amount:double,transaction_date:timestamp,status:string>
+
+(2) Filter
+Input [7]: [payment_id#32651, customer_id#32652, merchant_id#32653, amount#32654, transaction_date#32656, status#32657, dt#32664]
+Condition : (isnotnull(status#32657) AND (status#32657 = approved))
+
+(3) Project
+Output [6]: [payment_id#32651, customer_id#32652, merchant_id#32653, amount#32654, transaction_date#32656, dt#32664]
+Input [7]: [payment_id#32651, customer_id#32652, merchant_id#32653, amount#32654, transaction_date#32656, status#32657, dt#32664]
+
+(4) Scan parquet 
+Output [2]: [merchant_id#32666, category#32668]
+Batched: true
+Location: InMemoryFileIndex [file:/Users/dsaavedr/Downloads/midas-data-pipeline/data/lake/silver/merchants]
+PushedFilters: [IsNotNull(merchant_id)]
+ReadSchema: struct<merchant_id:string,category:string>
+
+(5) Filter
+Input [2]: [merchant_id#32666, category#32668]
+Condition : isnotnull(merchant_id#32666)
+
+(6) BroadcastExchange
+Input [2]: [merchant_id#32666, category#32668]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=65110]
+
+(7) BroadcastHashJoin
+Left keys [1]: [merchant_id#32653]
+Right keys [1]: [merchant_id#32666]
+Join type: LeftOuter
+Join condition: None
+
+(8) Project
+Output [7]: [merchant_id#32653, payment_id#32651, customer_id#32652, amount#32654, transaction_date#32656, dt#32664, category#32668]
+Input [8]: [payment_id#32651, customer_id#32652, merchant_id#32653, amount#32654, transaction_date#32656, dt#32664, merchant_id#32666, category#32668]
+
+(9) Scan parquet 
+Output [2]: [customer_id#32676, risk_segment#32681]
+Batched: true
+Location: InMemoryFileIndex [file:/Users/dsaavedr/Downloads/midas-data-pipeline/data/lake/silver/customers]
+PushedFilters: [IsNotNull(customer_id)]
+ReadSchema: struct<customer_id:string,risk_segment:string>
+
+(10) Filter
+Input [2]: [customer_id#32676, risk_segment#32681]
+Condition : isnotnull(customer_id#32676)
+
+(11) BroadcastExchange
+Input [2]: [customer_id#32676, risk_segment#32681]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=65114]
+
+(12) BroadcastHashJoin
+Left keys [1]: [customer_id#32652]
+Right keys [1]: [customer_id#32676]
+Join type: LeftOuter
+Join condition: None
+
+(13) Project
+Output [9]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, cast(transaction_date#32656 as bigint) AS _w0#32689L]
+Input [9]: [merchant_id#32653, payment_id#32651, customer_id#32652, amount#32654, transaction_date#32656, dt#32664, category#32668, customer_id#32676, risk_segment#32681]
+
+(14) Exchange
+Input [9]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, _w0#32689L]
+Arguments: hashpartitioning(customer_id#32652, 8), ENSURE_REQUIREMENTS, [plan_id=65118]
+
+(15) Sort
+Input [9]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, _w0#32689L]
+Arguments: [customer_id#32652 ASC NULLS FIRST, _w0#32689L ASC NULLS FIRST], false, 0
+
+(16) Window
+Input [9]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, _w0#32689L]
+Arguments: [count(1) windowspecdefinition(customer_id#32652, _w0#32689L ASC NULLS FIRST, specifiedwindowframe(RangeFrame, -604800, currentrow$())) AS txn_count_7d#32687L], [customer_id#32652], [_w0#32689L ASC NULLS FIRST]
+
+(17) Project
+Output [10]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, cast(transaction_date#32656 as bigint) AS _w0#32692L]
+Input [10]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, _w0#32689L, txn_count_7d#32687L]
+
+(18) Sort
+Input [10]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, _w0#32692L]
+Arguments: [customer_id#32652 ASC NULLS FIRST, _w0#32692L ASC NULLS FIRST], false, 0
+
+(19) Window
+Input [10]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, _w0#32692L]
+Arguments: [sum(amount#32654) windowspecdefinition(customer_id#32652, _w0#32692L ASC NULLS FIRST, specifiedwindowframe(RangeFrame, -604800, currentrow$())) AS amount_7d#32690], [customer_id#32652], [_w0#32692L ASC NULLS FIRST]
+
+(20) Project
+Output [11]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, cast(transaction_date#32656 as bigint) AS _w0#32695L]
+Input [11]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, _w0#32692L, amount_7d#32690]
+
+(21) Sort
+Input [11]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, _w0#32695L]
+Arguments: [customer_id#32652 ASC NULLS FIRST, _w0#32695L ASC NULLS FIRST], false, 0
+
+(22) Window
+Input [11]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, _w0#32695L]
+Arguments: [avg(amount#32654) windowspecdefinition(customer_id#32652, _w0#32695L ASC NULLS FIRST, specifiedwindowframe(RangeFrame, -604800, currentrow$())) AS avg_amount_7d#32693], [customer_id#32652], [_w0#32695L ASC NULLS FIRST]
+
+(23) Project
+Output [12]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, cast(transaction_date#32656 as bigint) AS _w0#32697L]
+Input [12]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, _w0#32695L, avg_amount_7d#32693]
+
+(24) Sort
+Input [12]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, _w0#32697L]
+Arguments: [customer_id#32652 ASC NULLS FIRST, _w0#32697L ASC NULLS FIRST], false, 0
+
+(25) Window
+Input [12]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, _w0#32697L]
+Arguments: [lag(_w0#32697L, -1, null) windowspecdefinition(customer_id#32652, _w0#32697L ASC NULLS FIRST, specifiedwindowframe(RowFrame, -1, -1)) AS _we0#32698L], [customer_id#32652], [_w0#32697L ASC NULLS FIRST]
+
+(26) Filter
+Input [13]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, _w0#32697L, _we0#32698L]
+Condition : (dt#32664 = 2026-09-11)
+
+(27) Project
+Output [14]: [payment_id#32651, customer_id#32652, merchant_id#32653, category#32668, risk_segment#32681, amount#32654, transaction_date#32656, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, (cast(transaction_date#32656 as bigint) - _we0#32698L) AS seconds_since_prev#32696L, (txn_count_7d#32687L > 12) AS high_velocity#32699, (amount#32654 > (avg_amount_7d#32693 * 4.0)) AS amount_spike#32700, dt#32664]
+Input [13]: [customer_id#32652, merchant_id#32653, payment_id#32651, amount#32654, transaction_date#32656, dt#32664, category#32668, risk_segment#32681, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, _w0#32697L, _we0#32698L]
+
+(28) AdaptiveSparkPlan
+Output [14]: [payment_id#32651, customer_id#32652, merchant_id#32653, category#32668, risk_segment#32681, amount#32654, transaction_date#32656, txn_count_7d#32687L, amount_7d#32690, avg_amount_7d#32693, seconds_since_prev#32696L, high_velocity#32699, amount_spike#32700, dt#32664]
+Arguments: isFinalPlan=false
+

@@ -57,6 +57,9 @@ def main(argv: list[str] | None = None) -> int:
     sh.add_argument("--auto", action="store_true", help="pausas fijas en vez de esperar Enter (para grabar)")
     sh.add_argument("--port", type=int, default=8100)
 
+    vt = sub.add_parser("vitrina", help="Armar el paquete de la demo web con las dos últimas corridas")
+    vt.add_argument("--out", default="vitrina")
+
     u = sub.add_parser("ui", help="Pantalla de etapas (solo lectura) en el navegador")
     u.add_argument("--port", type=int, default=8100)
     u.add_argument("--host", default="127.0.0.1")
@@ -89,6 +92,14 @@ def main(argv: list[str] | None = None) -> int:
         from .show import main as show
 
         return show(args.auto, args.port)
+
+    if args.cmd == "vitrina":
+        from pathlib import Path
+
+        from .ui.vitrina import build_bundle
+
+        print(f"Vitrina lista en {args.out}: {build_bundle(s, Path(args.out))}")
+        return 0
 
     if args.cmd == "ui":
         return _ui(args.host, args.port, not args.no_browser)

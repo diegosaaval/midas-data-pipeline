@@ -1,0 +1,34 @@
+# Demo pública en Render (plan gratuito): botón «Deploy to Render» del README.
+# Dos servicios que se hablan por internet, igual que en local:
+#   midas-data-pipeline: la pantalla de etapas de MIDAS repitiendo una corrida real (modo vitrina, sin Spark)
+#   atlas-midas:         ATLAS (de su propio repositorio) validando lo que MIDAS publica en /vitrina/gold
+# Si Render asigna otros nombres a los servicios, ajusta las tres URL de abajo.
+services:
+  - type: web
+    name: midas-data-pipeline
+    runtime: docker
+    plan: free
+    dockerfilePath: ./docker/Dockerfile.vitrina
+    healthCheckPath: /healthz
+    envVars:
+      - key: MIDAS_ATLAS_URL
+        value: https://atlas-midas.onrender.com
+
+  - type: web
+    name: atlas-midas
+    runtime: docker
+    plan: free
+    repo: https://github.com/diegosaaval/atlas-data-quality
+    branch: main
+    healthCheckPath: /healthz
+    envVars:
+      - key: ATLAS_PUBLIC_DEMO
+        value: "1"
+      - key: ATLAS_FUENTE
+        value: midas
+      - key: ATLAS_FUENTE_RUTA
+        value: https://midas-data-pipeline.onrender.com/vitrina/gold
+      - key: ATLAS_FUENTE_URL_CORRIDA
+        value: https://midas-data-pipeline.onrender.com/#run={run_id}
+      - key: TZ
+        value: America/Bogota
