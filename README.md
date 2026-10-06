@@ -26,7 +26,7 @@ git clone https://github.com/diegosaaval/midas-data-pipeline.git
 git clone https://github.com/diegosaaval/atlas-data-quality.git
 ```
 
-Y haz **doble clic en `Ver demo MIDAS + ATLAS.command`** (Mac) o **`Ver demo MIDAS + ATLAS.bat`** (Windows). La primera vez instala todo (Python 3.12 incluido si hace falta; para Spark se necesita Java 17+). Luego enciende ATLAS, lo conecta a MIDAS, abre las dos pantallas y cuenta la historia paso a paso (Enter para avanzar):
+Y haz **doble clic en `Ver demo MIDAS + ATLAS.command`** (Mac) o **`Ver demo MIDAS + ATLAS.bat`** (Windows). La primera vez instala todo (Python 3.12 incluido si hace falta; para Spark se necesita Java 17+). Luego enciende ATLAS, lo conecta a MIDAS, abre las dos pantallas y cuenta la historia sola en unos 4 minutos (con `--pasos` avanza con Enter, para presentar en vivo):
 
 1. **MIDAS procesa un mes** de una fintech. En la pantalla de etapas cada capa se enciende y las filas fluyen de una a otra; MIDAS aparta en cuarentena ~425 registros inválidos con su motivo, elimina ~1.250 duplicados e integra ~9.400 filas tardías a su fecha real.
 2. **ATLAS valida lo publicado**: las 4 tablas gold con sus 23 reglas, en verde.

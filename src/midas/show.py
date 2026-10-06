@@ -94,7 +94,7 @@ class Show:
         if self.auto:
             self.sleep(seconds)
         else:
-            input(f"  {DIM}Enter para continuar…{RESET}")
+            input(f"  {DIM}Presiona Enter para seguir…{RESET}")
 
     # ----------------------------------------------------------------- pantallas
     def ensure_ui(self) -> None:
@@ -118,7 +118,10 @@ class Show:
         if meta.get("source") != ATLAS_SOURCE:
             self.say("Conectando ATLAS a MIDAS (botón Fuente de datos)…")
             if not _post(f"{self.atlas}/api/source", {"name": ATLAS_SOURCE}):
-                self.say(f"{RED}ATLAS no pudo conectarse a MIDAS.{RESET}")
+                sources = (_get(f"{self.atlas}/api/sources") or {}).get("sources", [])
+                why = next((x.get("error") for x in sources if x.get("name") == ATLAS_SOURCE), None)
+                self.say(f"{RED}ATLAS no pudo conectarse a MIDAS{RESET}: {why or 'no tiene el conector ' + ATLAS_SOURCE}.")
+                self.say("Si ATLAS lleva tiempo abierto, puede tener una versión anterior: ciérralo y vuelve a abrir la demo.")
                 return False
         return True
 
@@ -136,7 +139,9 @@ class Show:
             self.sleep(0.8)
             self.open_url(f"{self.atlas}/")
         self.say("Abrí las dos pantallas: MIDAS (etapas del pipeline) y ATLAS (monitor de calidad).")
-        self.pause(3)
+        if self.auto:
+            self.say("La demo corre sola, unos 4 minutos. Ponlas lado a lado y mira cómo avanzan.")
+        self.pause(5)
 
         self.title(1, "MIDAS procesa un mes de una fintech")
         self.say("Cada día llegan archivos de 5 sistemas: clientes, comercios, pagos, devoluciones y contracargos.")

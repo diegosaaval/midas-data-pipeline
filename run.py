@@ -2,7 +2,8 @@
 
     python run.py                 # instala si hace falta, abre la pantalla (y corre la demo si no hay datos)
     python run.py --demo          # corre desde cero la demo de 30 días mientras la ves en vivo
-    python run.py --show          # la demo de MIDAS + ATLAS: enciende ATLAS y cuenta la historia paso a paso
+    python run.py --show          # la demo de MIDAS + ATLAS: enciende ATLAS y cuenta la historia sola
+    python run.py --show --pasos  # igual, pero avanza con Enter (para presentar en vivo)
     python run.py --test          # corre las pruebas
     python run.py --reinstall     # rehace el entorno
     python run.py --sin-acceso    # no crear el acceso directo en el escritorio
@@ -290,6 +291,9 @@ def run_show(auto: bool) -> None:
                 say(f"ATLAS no arrancó. Ábrelo con doble clic en «Iniciar ATLAS» ({folder}) y vuelve a intentar.")
     try:
         subprocess.run([str(VENV_PY), "-m", "midas.cli", "show", *(["--auto"] if auto else [])], cwd=ROOT)
+        if atlas and atlas.poll() is None:  # que el incidente se pueda explorar con calma
+            say("ATLAS sigue abierto para que explores el incidente. Ctrl+C para cerrar todo.")
+            atlas.wait()
     except KeyboardInterrupt:
         pass
     finally:
@@ -355,7 +359,7 @@ def main() -> None:
                         help="borrar data/ y correr la demo de 30 días mientras la ves en vivo")
     parser.add_argument("--sin-demo", dest="demo", action="store_false", help="nunca correr la demo")
     parser.add_argument("--show", action="store_true", help="la demo de MIDAS + ATLAS, paso a paso")
-    parser.add_argument("--auto", action="store_true", help="con --show: pausas fijas en vez de Enter (para grabar)")
+    parser.add_argument("--pasos", action="store_true", help="con --show: avanzar con Enter (para presentar en vivo)")
     parser.add_argument("--test", action="store_true", help="correr las pruebas en vez del servidor")
     parser.add_argument("--reinstall", action="store_true", help="rehacer el entorno")
     parser.add_argument("--sin-acceso", action="store_true", help="no crear el acceso directo en el escritorio")
@@ -367,7 +371,7 @@ def main() -> None:
     if args.test:
         sys.exit(subprocess.run([str(VENV_PY), "-m", "pytest"], cwd=ROOT).returncode)
     if args.show:
-        run_show(args.auto)
+        run_show(auto=not args.pasos)
         return
     maybe_shortcut(args.sin_acceso)
     serve(args.port, not args.no_browser, args.demo)
