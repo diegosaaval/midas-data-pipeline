@@ -11,7 +11,7 @@ dependencies = [
   "pandas>=2.2,<3",
   "duckdb>=1.1",
   "dbt-core>=1.9",
-  "dbt-duckdb>=1.9",
+  "dbt-duckdb>=1.11.0",
 ]
 
 [project.optional-dependencies]
