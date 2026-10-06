@@ -4,6 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    ignore:  # saltos de versión mayor que hay que probar a mano con Spark (los tests casi no pasan por pandas)
+      - dependency-name: pandas
+        update-types: ["version-update:semver-major"]
+      - dependency-name: pyspark
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
