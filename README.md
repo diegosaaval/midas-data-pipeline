@@ -6,7 +6,7 @@
 ![pyspark](https://img.shields.io/badge/PySpark-4.x-orange)
 ![dbt](https://img.shields.io/badge/dbt-duckdb%20%7C%20athena-ff694b)
 ![airflow](https://img.shields.io/badge/Airflow-3.x-017cee)
-![tests](https://img.shields.io/badge/tests-49%20pasando-brightgreen)
+![tests](https://img.shields.io/badge/tests-50%20pasando-brightgreen)
 ![coverage](https://img.shields.io/badge/cobertura-93%25-brightgreen)
 
 > 🇬🇧 *MIDAS turns raw fintech data (customers, merchants, payments, refunds, chargebacks) into trusted gold tables: landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills, run metrics and a live stage view. Monitored by [ATLAS](https://github.com/diegosaaval/atlas-data-quality).*
@@ -171,7 +171,7 @@ docker compose run --rm midas status    # CLI dentro del contenedor
 ## Cómo se prueba
 
 ```bash
-make test        # 47 tests (PySpark + dbt reales + API de la pantalla + show) · cobertura 93%
+make test        # 48 tests (PySpark + dbt reales + API de la pantalla + show) · cobertura 93%
 ```
 
 Cada problema de ingeniería tiene un test con datos construidos a mano: cuarentena por motivo, dedup, datos tardíos sin tocar otras particiones (se verifica la fecha de modificación de los archivos), idempotencia, evolución de esquema, reglas entre entidades, partition pruning en el plan físico, reintentos, fallas permanentes, backfill sin mover el watermark y fuente faltante sin reintento. La API de la pantalla tiene sus propios tests (estado de cada etapa en vivo, reintentos, fallas, corridas interrumpidas, solo lectura) y el contrato con ATLAS se valida sobre una corrida real. El DAG se valida contra Airflow 3 real en CI.
@@ -207,7 +207,7 @@ src/midas/
 dbt/                proyecto dbt (perfiles DuckDB local y Athena)
 airflow/dags/       DAG diario
 docker/             imagen de Airflow con Java + midas
-tests/              49 tests
+tests/              50 tests
 run.py              lanzador de doble clic (Iniciar MIDAS.command / .bat)
 ```
 

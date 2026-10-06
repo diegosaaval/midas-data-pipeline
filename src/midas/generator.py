@@ -256,6 +256,21 @@ def write_landing(day: date, settings: Settings | None = None, anomalies: set[st
     return counts
 
 
+def write_landing_range(days: list[date], settings: Settings | None = None, anomalies: set[str] | None = None,
+                        workers: int | None = None) -> list[dict[str, int]]:
+    """Genera varios días en paralelo (un proceso por núcleo). Cada día es una función pura de (semilla, fecha),
+    así que el resultado es idéntico al de generarlos uno por uno."""
+    import os
+    from concurrent.futures import ProcessPoolExecutor
+
+    s = settings or get_settings()
+    workers = workers or min(len(days), os.cpu_count() or 1)
+    if workers <= 1:
+        return [write_landing(day, s, anomalies) for day in days]
+    with ProcessPoolExecutor(workers) as pool:
+        return list(pool.map(write_landing, days, [s] * len(days), [anomalies] * len(days)))
+
+
 def landed_dates(settings: Settings | None = None) -> list[date]:
     s = settings or get_settings()
     root = Path(s.landing) / "payments"

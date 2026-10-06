@@ -18,7 +18,7 @@ import sys
 from datetime import date, timedelta
 
 from .config import get_settings
-from .generator import write_landing
+from .generator import write_landing_range
 from .pipeline import Pipeline, PipelineError, date_range
 
 
@@ -70,8 +70,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "generate":
         start = args.start or s.epoch
         end = args.end or (date.today() - timedelta(days=1))
-        for day in date_range(start, end):
-            counts = write_landing(day, s, set(args.anomaly))
+        days = date_range(start, end)
+        for day, counts in zip(days, write_landing_range(days, s, set(args.anomaly)), strict=True):
             print(f"{day}  " + "  ".join(f"{k}={v}" for k, v in counts.items()))
         return 0
 
