@@ -85,3 +85,18 @@ def test_approval_drop_keeps_every_record_valid_but_lowers_the_rate(tmp_path):
         rate[tag] = sum(r["status"] == "approved" for r in rows) / len(rows)
         assert {r["status"] for r in rows} <= {"approved", "declined", "pending"}  # nada que el contrato rechace
     assert rate["normal"] > 0.8 and rate["drop"] < rate["normal"] - 0.2
+
+
+def test_parallel_generation_matches_day_by_day(tmp_path):
+    from pathlib import Path
+
+    from midas.generator import write_landing_range
+
+    days = [DAY + timedelta(days=d) for d in range(3)]
+    seq, par = make_settings(tmp_path / "seq"), make_settings(tmp_path / "par")
+    for d in days:
+        write_landing(d, seq)
+    write_landing_range(days, par, workers=3)
+    files = sorted(p.relative_to(seq.landing) for p in Path(seq.landing).rglob("*.jsonl"))
+    assert files and files == sorted(p.relative_to(par.landing) for p in Path(par.landing).rglob("*.jsonl"))
+    assert all((Path(seq.landing) / f).read_bytes() == (Path(par.landing) / f).read_bytes() for f in files)

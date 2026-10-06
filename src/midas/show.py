@@ -23,7 +23,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from .config import PROJECT_ROOT, Settings, get_settings
-from .generator import write_landing
+from .generator import write_landing, write_landing_range
 from .pipeline import Pipeline, date_range, reset_workspace
 
 DAYS = (date(2026, 9, 1), date(2026, 9, 30))
@@ -147,9 +147,16 @@ class Show:
         self.say("Cada día llegan archivos de 5 sistemas: clientes, comercios, pagos, devoluciones y contracargos.")
         self.say("Vienen con problemas reales: pagos repetidos, montos inválidos, datos que llegan tarde.")
         reset_workspace(self.s)  # conserva la última publicación gold: ATLAS nunca ve un hueco
-        self.spark = self.spark or _quiet_spark(self.s)
-        for day in date_range(*self.days):
-            write_landing(day, self.s)
+        self.say("Preparando: los sistemas entregan los archivos del mes y arranca Spark (unos segundos)…")
+        warmup = None
+        if self.spark is None:  # Spark arranca mientras se generan las fuentes
+            import threading
+
+            warmup = threading.Thread(target=lambda: setattr(self, "spark", _quiet_spark(self.s)), daemon=True)
+            warmup.start()
+        write_landing_range(date_range(*self.days), self.s)
+        if warmup:
+            warmup.join()
         first, last = self.days
         self.say(f"Fuentes listas: del {first.day} al {last.day} de {MONTHS[last.month - 1]}. "
                  "Mira la pantalla de MIDAS: cada etapa se enciende.")
