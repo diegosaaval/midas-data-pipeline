@@ -1,12 +1,12 @@
-"""CLI de FINFLOW. Airflow ejecuta estos mismos comandos.
+"""CLI de MIDAS. Airflow ejecuta estos mismos comandos.
 
-  finflow generate --start 2026-09-01 --end 2026-09-30   # simula las fuentes (landing)
-  finflow run                                           # incremental: solo fechas nuevas
-  finflow run --date 2026-09-10                         # re-procesa un día (idempotente)
-  finflow backfill --start 2026-09-05 --end 2026-09-08  # re-procesa un rango
-  finflow status                                        # últimas corridas y métricas
-  finflow ui                                            # pantalla de etapas en http://localhost:8100
-  finflow show                                          # demo en vivo de FINFLOW + ATLAS
+  midas generate --start 2026-09-01 --end 2026-09-30   # simula las fuentes (landing)
+  midas run                                           # incremental: solo fechas nuevas
+  midas run --date 2026-09-10                         # re-procesa un día (idempotente)
+  midas backfill --start 2026-09-05 --end 2026-09-08  # re-procesa un rango
+  midas status                                        # últimas corridas y métricas
+  midas ui                                            # pantalla de etapas en http://localhost:8100
+  midas show                                          # demo en vivo de MIDAS + ATLAS
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ def _date(value: str) -> date:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="finflow", description="Pipeline de datos financieros FINFLOW")
+    parser = argparse.ArgumentParser(prog="midas", description="Pipeline de datos financieros MIDAS")
     parser.add_argument("-v", "--verbose", action="store_true")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("reset", help="Borrar fuentes, capas y metadatos (conserva la última publicación gold)")
 
-    sh = sub.add_parser("show", help="Demo en vivo de FINFLOW + ATLAS: un mes de datos y un incidente")
+    sh = sub.add_parser("show", help="Demo en vivo de MIDAS + ATLAS: un mes de datos y un incidente")
     sh.add_argument("--auto", action="store_true", help="pausas fijas en vez de esperar Enter (para grabar)")
     sh.add_argument("--port", type=int, default=8100)
 
@@ -175,13 +175,13 @@ def _ui(host: str, port: int, open_browser: bool) -> int:
         print("Falta la pantalla: instala con  pip install -e '.[ui]'", file=sys.stderr)
         return 1
     url = f"http://localhost:{port}/"
-    print(f"FINFLOW · Etapas en {url}  (Ctrl+C para cerrar)")
+    print(f"MIDAS · Etapas en {url}  (Ctrl+C para cerrar)")
     if open_browser:
         import threading
         import webbrowser
 
         threading.Timer(1.0, webbrowser.open, args=(url,)).start()
-    uvicorn.run("finflow.ui.api:app", host=host, port=port, log_level="warning")
+    uvicorn.run("midas.ui.api:app", host=host, port=port, log_level="warning")
     return 0
 
 

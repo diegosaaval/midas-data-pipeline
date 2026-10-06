@@ -1,8 +1,8 @@
 # Entorno local completo:  docker compose up --build   ->  Airflow en http://localhost:8080
-# Correr el pipeline sin Airflow:  docker compose run --rm finflow run
-x-finflow-env: &finflow-env
-  FINFLOW_SCALE: ${FINFLOW_SCALE:-0.5}
-  FINFLOW_SIMULATE_SOURCES: "true"
+# Correr el pipeline sin Airflow:  docker compose run --rm midas run
+x-midas-env: &midas-env
+  MIDAS_SCALE: ${MIDAS_SCALE:-0.5}
+  MIDAS_SIMULATE_SOURCES: "true"
 
 services:
   postgres:
@@ -19,11 +19,11 @@ services:
 
   airflow:
     build: {context: ., dockerfile: docker/Dockerfile}
-    image: finflow-airflow:latest
+    image: midas-airflow:latest
     depends_on:
       postgres: {condition: service_healthy}
     environment:
-      <<: *finflow-env
+      <<: *midas-env
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -33,15 +33,15 @@ services:
     ports: ["8080:8080"]
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - lake:/opt/finflow/data
+      - lake:/opt/midas/data
 
-  finflow:
-    image: finflow-airflow:latest
+  midas:
+    image: midas-airflow:latest
     depends_on: [airflow]
-    environment: *finflow-env
-    entrypoint: ["finflow"]
+    environment: *midas-env
+    entrypoint: ["midas"]
     command: ["status"]
-    volumes: [lake:/opt/finflow/data]
+    volumes: [lake:/opt/midas/data]
     profiles: ["cli"]
 
 volumes:

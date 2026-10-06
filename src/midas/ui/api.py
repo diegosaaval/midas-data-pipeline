@@ -1,9 +1,9 @@
 """Pantalla de etapas: API de solo lectura sobre los metadatos del pipeline.
 
-Lee `data/meta/finflow.db` (runs, task_runs, schema_events, watermarks), los archivos de landing y los
+Lee `data/meta/midas.db` (runs, task_runs, schema_events, watermarks), los archivos de landing y los
 planes de ejecución guardados en `data/meta/plans/`. Nunca escribe: la base se abre en modo solo lectura.
 
-    finflow ui            # http://localhost:8100
+    midas ui            # http://localhost:8100
 """
 
 from __future__ import annotations
@@ -290,10 +290,10 @@ def _atlas_up(url: str, cache: dict) -> bool:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     store = Store(settings or get_settings())
-    atlas_url = os.getenv("FINFLOW_ATLAS_URL", "http://localhost:8000")
+    atlas_url = os.getenv("MIDAS_ATLAS_URL", "http://localhost:8000")
     atlas_cache: dict = {}
-    app = FastAPI(title="FINFLOW · Etapas", version="0.1.0",
-                  description="Solo lectura sobre los metadatos del pipeline FINFLOW.")
+    app = FastAPI(title="MIDAS · Etapas", version="0.1.0",
+                  description="Solo lectura sobre los metadatos del pipeline MIDAS.")
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -301,7 +301,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/meta")
     def meta() -> dict:
-        return {"app": "finflow", "watermark": store.watermark(), "manifest": store.manifest(),
+        return {"app": "midas", "watermark": store.watermark(), "manifest": store.manifest(),
                 "atlas_url": atlas_url, "atlas_up": _atlas_up(atlas_url, atlas_cache),
                 "stages": [{"key": k, "name": n} for k, n, _ in STAGES]}
 

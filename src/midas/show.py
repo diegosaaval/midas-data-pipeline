@@ -1,12 +1,12 @@
-"""`finflow show`: la demo de FINFLOW + ATLAS para presentar en vivo, sin teclear nada.
+"""`midas show`: la demo de MIDAS + ATLAS para presentar en vivo, sin teclear nada.
 
-1. Abre las dos pantallas (etapas de FINFLOW y ATLAS con FINFLOW como fuente).
-2. Procesa 30 días desde cero: FINFLOW publica y ATLAS lo valida todo en verde.
-3. Llega el 1 de octubre con la pasarela de tarjetas caída: FINFLOW lo publica (cada registro es válido),
+1. Abre las dos pantallas (etapas de MIDAS y ATLAS con MIDAS como fuente).
+2. Procesa 30 días desde cero: MIDAS publica y ATLAS lo valida todo en verde.
+3. Llega el 1 de octubre con la pasarela de tarjetas caída: MIDAS lo publica (cada registro es válido),
    ATLAS lo detecta y abre un incidente con el enlace a la corrida que lo trajo.
 
-    finflow show            # pausa en cada paso hasta que presiones Enter (para presentar)
-    finflow show --auto     # pausas fijas (para grabar un video)
+    midas show            # pausa en cada paso hasta que presiones Enter (para presentar)
+    midas show --auto     # pausas fijas (para grabar un video)
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from .pipeline import Pipeline, date_range, reset_workspace
 
 DAYS = (date(2026, 9, 1), date(2026, 9, 30))
 INCIDENT_DAY = date(2026, 10, 1)
+ATLAS_SOURCE = os.getenv("MIDAS_ATLAS_SOURCE", "midas")  # nombre del conector de MIDAS en ATLAS (conectores/midas.yaml)
 BOLD, DIM, GREEN, RED, RESET = ("\033[1m", "\033[2m", "\033[32m", "\033[31m", "\033[0m") if sys.stdout.isatty() else ("",) * 5
 
 
@@ -76,27 +77,27 @@ class Show:
 
     # ----------------------------------------------------------------- pantallas
     def ensure_ui(self) -> None:
-        if (_get(f"{self.ui}/api/meta") or {}).get("app") == "finflow":
+        if (_get(f"{self.ui}/api/meta") or {}).get("app") == "midas":
             return
         self.server = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "finflow.ui.api:app", "--host", "127.0.0.1", "--port", str(self.ui_port),
+            [sys.executable, "-m", "uvicorn", "midas.ui.api:app", "--host", "127.0.0.1", "--port", str(self.ui_port),
              "--log-level", "warning"], cwd=PROJECT_ROOT)
         for _ in range(60):
             if _get(f"{self.ui}/healthz"):
                 return
             time.sleep(0.5)
-        raise SystemExit("No arrancó la pantalla de etapas de FINFLOW.")
+        raise SystemExit("No arrancó la pantalla de etapas de MIDAS.")
 
     def ensure_atlas(self) -> bool:
         meta = _get(f"{self.atlas}/api/meta")
         if meta is None:
             self.say(f"{RED}ATLAS no responde en {self.atlas}.{RESET} Ábrelo en otra terminal y vuelve a correr el show:")
-            self.say("    cd ../atlas-one && ./start.sh --fuente finflow")
+            self.say(f"    cd ../atlas-data-quality && ./start.sh --fuente {ATLAS_SOURCE}")
             return False
-        if meta.get("source") != "finflow":
-            self.say("Conectando ATLAS a FINFLOW (botón Fuente de datos)…")
-            if not _post(f"{self.atlas}/api/source", {"name": "finflow"}):
-                self.say(f"{RED}ATLAS no pudo conectarse a FINFLOW.{RESET}")
+        if meta.get("source") != ATLAS_SOURCE:
+            self.say("Conectando ATLAS a MIDAS (botón Fuente de datos)…")
+            if not _post(f"{self.atlas}/api/source", {"name": ATLAS_SOURCE}):
+                self.say(f"{RED}ATLAS no pudo conectarse a MIDAS.{RESET}")
                 return False
         return True
 
@@ -106,23 +107,23 @@ class Show:
     # ----------------------------------------------------------------- guion
     def run(self) -> None:
         logging.getLogger().setLevel(logging.WARNING)  # en la terminal solo la narración; el detalle está en la pantalla
-        print(f"\n  {BOLD}FINFLOW + ATLAS{RESET} · construir los datos y poder confiar en ellos\n")
+        print(f"\n  {BOLD}MIDAS + ATLAS{RESET} · construir los datos y poder confiar en ellos\n")
         self.ensure_ui()
         atlas_ok = self.ensure_atlas()
         webbrowser.open(f"{self.ui}/")
         if atlas_ok:
             time.sleep(0.8)
             webbrowser.open(f"{self.atlas}/")
-        self.say("Abrí las dos pantallas: FINFLOW (etapas del pipeline) y ATLAS (monitor de calidad).")
+        self.say("Abrí las dos pantallas: MIDAS (etapas del pipeline) y ATLAS (monitor de calidad).")
         self.pause(3)
 
-        self.title(1, "FINFLOW procesa un mes de una fintech")
+        self.title(1, "MIDAS procesa un mes de una fintech")
         self.say("Cada día llegan archivos de 5 sistemas: clientes, comercios, pagos, devoluciones y contracargos.")
         self.say("Vienen con problemas reales: pagos repetidos, montos inválidos, datos que llegan tarde.")
         reset_workspace(self.s)  # conserva la última publicación gold: ATLAS nunca ve un hueco
         for day in date_range(*DAYS):
             write_landing(day, self.s)
-        self.say("Fuentes listas: del 1 al 30 de septiembre. Mira la pantalla de FINFLOW: cada etapa se enciende.")
+        self.say("Fuentes listas: del 1 al 30 de septiembre. Mira la pantalla de MIDAS: cada etapa se enciende.")
         t0 = time.time()
         pipe = Pipeline(self.s)
         try:
@@ -136,7 +137,7 @@ class Show:
         self.pause()
 
         if atlas_ok:
-            self.title(2, "ATLAS valida lo que FINFLOW publicó")
+            self.title(2, "ATLAS valida lo que MIDAS publicó")
             time.sleep(3)
             self.say("ATLAS vio el manifiesto nuevo y validó las 4 tablas gold con sus 23 reglas.")
             self.say(f"Pantalla: {self.atlas}/#tablas")
@@ -153,7 +154,7 @@ class Show:
         finally:
             pipe.close()
         q = json.loads(Path(self.s.path("gold", "_manifest.json")).read_text())["quality"]
-        self.say(f"{GREEN}FINFLOW: todo OK{RESET}. Apartó {_n(q['quarantined'])} registros inválidos, como cualquier día;")
+        self.say(f"{GREEN}MIDAS: todo OK{RESET}. Apartó {_n(q['quarantined'])} registros inválidos, como cualquier día;")
         self.say("los pagos rechazados son válidos, así que pasan y se publican.")
         if not atlas_ok:
             return self.finish(run_id)
@@ -175,7 +176,7 @@ class Show:
             webbrowser.open(f"{self.atlas}/#incidentes")
             self.pause()
             self.title(5, "Del incidente a la corrida que lo trajo")
-            self.say("En ATLAS, «Ver la corrida que la trajo» abre FINFLOW justo en esa corrida:")
+            self.say("En ATLAS, «Ver la corrida que la trajo» abre MIDAS justo en esa corrida:")
             self.say(f"{self.ui}/#run={run_id}")
             webbrowser.open(f"{self.ui}/#run={run_id}")
         else:
@@ -183,10 +184,10 @@ class Show:
         self.finish(run_id)
 
     def finish(self, run_id: str | None) -> None:
-        moral = "FINFLOW detiene lo que incumple las reglas que conoce; ATLAS detecta lo que ninguna regla puede ver."
+        moral = "MIDAS detiene lo que incumple las reglas que conoce; ATLAS detecta lo que ninguna regla puede ver."
         print(f"\n  {BOLD}{moral}{RESET}\n")
         if self.server:
-            self.say("La pantalla de FINFLOW sigue abierta. Ctrl+C para cerrarla.")
+            self.say("La pantalla de MIDAS sigue abierta. Ctrl+C para cerrarla.")
             try:
                 self.server.wait()
             except KeyboardInterrupt:
@@ -194,5 +195,5 @@ class Show:
 
 
 def main(auto: bool = False, ui_port: int = 8100) -> int:
-    Show(auto, ui_port, os.getenv("FINFLOW_ATLAS_URL", "http://localhost:8000")).run()
+    Show(auto, ui_port, os.getenv("MIDAS_ATLAS_URL", "http://localhost:8000")).run()
     return 0

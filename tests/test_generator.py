@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 from conftest import make_settings
 
-from finflow.generator import HOT_MERCHANT, Bank, landed_dates, write_landing
+from midas.generator import HOT_MERCHANT, Bank, landed_dates, write_landing
 
 DAY = date(2026, 9, 10)
 
@@ -61,8 +61,8 @@ def test_usd_payments_are_priced_in_dollars(tmp_path):
     """Un pago en USD trae el ticket en dólares: si viniera en pesos, el TPV en COP se inflaría x4000."""
     import yaml
 
-    from finflow.config import PROJECT_ROOT
-    from finflow.generator import USD_COP
+    from midas.config import PROJECT_ROOT
+    from midas.generator import USD_COP
 
     payments = [p for d in range(5) for p in bank(tmp_path, scale=1).payments(DAY + timedelta(days=d))]
     usd = [p["amount"] for p in payments if p.get("currency") == "USD" and p["amount"] > 0]

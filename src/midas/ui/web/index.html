@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FINFLOW · Etapas</title>
-  <meta name="description" content="Cada corrida del pipeline FINFLOW como un diagrama en vivo: etapas, filas, cuarentena, reintentos y planes de ejecución.">
+  <title>MIDAS · Etapas</title>
+  <meta name="description" content="Cada corrida del pipeline MIDAS como un diagrama en vivo: etapas, filas, cuarentena, reintentos y planes de ejecución.">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
@@ -15,7 +15,7 @@
   <header class="topbar">
     <div class="brand">
       <img class="logo" src="icon.svg" alt="" width="28" height="28">
-      <span class="brand-name">FINFLOW <span class="muted">Etapas del pipeline</span></span>
+      <span class="brand-name">MIDAS <span class="muted">Etapas del pipeline</span></span>
     </div>
     <nav class="tabs" role="tablist">
       <button data-view="corrida" class="active">Corrida</button>
@@ -44,9 +44,9 @@
 
       <div class="card" id="empty" hidden>
         <h3>Todavía no hay corridas</h3>
-        <p class="muted">Esta pantalla solo lee los metadatos del pipeline. Corre FINFLOW en una terminal y mira cómo avanza aquí, en vivo:</p>
+        <p class="muted">Esta pantalla solo lee los metadatos del pipeline. Corre MIDAS en una terminal y mira cómo avanza aquí, en vivo:</p>
         <pre class="cmd">make demo</pre>
-        <p class="muted small">o paso a paso: <code>finflow generate --start 2026-09-01 --end 2026-09-30</code> y luego <code>finflow run</code>.</p>
+        <p class="muted small">o paso a paso: <code>midas generate --start 2026-09-01 --end 2026-09-30</code> y luego <code>midas run</code>.</p>
       </div>
 
       <div class="card pipeline-card" id="pipeline-card" hidden>

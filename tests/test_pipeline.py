@@ -6,8 +6,8 @@ import duckdb
 import pytest
 from conftest import DAYS, make_settings
 
-from finflow.generator import write_landing
-from finflow.pipeline import GOLD_DATASETS, Pipeline, PipelineError
+from midas.generator import write_landing
+from midas.pipeline import GOLD_DATASETS, Pipeline, PipelineError
 
 
 def gold_counts(s):
@@ -61,7 +61,7 @@ def test_explain_plans_show_broadcast_and_pruning(lake):
 
 def test_transient_failure_is_retried(lake, monkeypatch):
     s, _, _ = lake
-    monkeypatch.setenv("FINFLOW_FAIL", "silver.customers:1")
+    monkeypatch.setenv("MIDAS_FAIL", "silver.customers:1")
     pipe = Pipeline(s, lake[1].spark)
     pipe.backoff_seconds = 0
     run_id = pipe.run_date(date(2026, 9, 4))
@@ -73,7 +73,7 @@ def test_transient_failure_is_retried(lake, monkeypatch):
 
 def test_persistent_failure_fails_the_run_after_retries(lake, monkeypatch):
     s, _, _ = lake
-    monkeypatch.setenv("FINFLOW_FAIL", "features:99")
+    monkeypatch.setenv("MIDAS_FAIL", "features:99")
     pipe = Pipeline(s, lake[1].spark)
     pipe.backoff_seconds = 0
     with pytest.raises(PipelineError):
@@ -105,7 +105,7 @@ def test_missing_source_is_not_retried(spark, tmp_path):
 
 
 def test_reset_keeps_the_last_gold_publication(tmp_path):
-    from finflow.pipeline import reset_workspace
+    from midas.pipeline import reset_workspace
 
     s = make_settings(tmp_path)
     for folder in ("landing/payments", "lake/bronze/payments", "lake/silver/payments", "lake/gold", "meta/plans", "warehouse"):

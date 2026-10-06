@@ -1,4 +1,4 @@
-/* FINFLOW · pantalla de etapas. Solo lee la API (/api/...) y dibuja; nunca cambia el pipeline. */
+/* MIDAS · pantalla de etapas. Solo lee la API (/api/...) y dibuja; nunca cambia el pipeline. */
 "use strict";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -51,7 +51,7 @@ const FLOW_LABELS = ["filas", "filas", "pagos", "filas silver", "filas gold"];
 
 const state = {
   runs: [], run: null, meta: null, selectedRun: null, follow: true,
-  stage: store.get("finflow.stage", "silver"), tab: "tasks", plan: null, view: "corrida",
+  stage: store.get("midas.stage", "silver"), tab: "tasks", plan: null, view: "corrida",
 };
 
 const planCache = {};
@@ -110,7 +110,7 @@ function renderAtlas() {
   btn.href = m.atlas_url;
   const ready = run ? run.publish_ok : !!m.manifest;
   btn.setAttribute("aria-disabled", ready ? "false" : "true");
-  btn.title = !ready ? "Se habilita cuando la publicación termina" : m.atlas_up ? "Abrir ATLAS, que valida las tablas gold" : `ATLAS no responde en ${m.atlas_url}: ábrelo con «Iniciar ATLAS» y elige FINFLOW como fuente`;
+  btn.title = !ready ? "Se habilita cuando la publicación termina" : m.atlas_up ? "Abrir ATLAS, que valida las tablas gold" : `ATLAS no responde en ${m.atlas_url}: ábrelo con «Iniciar ATLAS» y elige MIDAS como fuente`;
 }
 
 function renderRun() {
@@ -238,7 +238,7 @@ function tasksTable(s) {
 
 function landingTable(s) {
   if (!s.files.length) return `<p class="empty-note">Esta corrida no lee archivos de landing.</p>`;
-  return `<p class="muted small">Archivos JSONL que dejaron las fuentes. Los escribe el generador (<code>finflow generate</code>), fuera del pipeline.</p>
+  return `<p class="muted small">Archivos JSONL que dejaron las fuentes. Los escribe el generador (<code>midas generate</code>), fuera del pipeline.</p>
     <div class="table-wrap"><table><tr><th>Fecha</th><th>Entidad</th><th class="num">Líneas</th></tr>${s.files.map((f) => `<tr><td>${esc(f.date)}</td><td>${esc(f.entity)}</td><td class="num">${f.rows == null ? '<span class="chip miss">no llegó</span>' : num(f.rows)}</td></tr>`).join("")}</table></div>`;
 }
 
@@ -275,7 +275,7 @@ function renderPublication(run) {
   const m = state.meta ?? {};
   const atlas = run.publish_ok
     ? `<a class="btn primary" href="${esc(m.atlas_url)}" target="_blank" rel="noopener">Ver en ATLAS</a>
-       <p class="atlas-note" style="margin-top:10px">${m.atlas_up ? "ATLAS está abierto y valida estas tablas apenas cambia el manifiesto." : `ATLAS no responde en ${esc(m.atlas_url)}. Ábrelo con «Iniciar ATLAS» y elige FINFLOW en Fuente de datos.`}</p>`
+       <p class="atlas-note" style="margin-top:10px">${m.atlas_up ? "ATLAS está abierto y valida estas tablas apenas cambia el manifiesto." : `ATLAS no responde en ${esc(m.atlas_url)}. Ábrelo con «Iniciar ATLAS» y elige MIDAS en Fuente de datos.`}</p>`
     : `<p class="atlas-note">${run.status === "running" ? "Las tablas gold se publican al final de la corrida." : "Esta corrida no publicó tablas gold."}</p>`;
   setHTML($("#publication"), `
     <div class="card-head"><h3>Publicación gold</h3>${pill(pub.status)}</div>
@@ -359,7 +359,7 @@ $("#run-select").addEventListener("change", (e) => openRun(e.target.value));
 $("#btn-follow").addEventListener("click", () => { state.follow = true; history.replaceState(null, "", location.pathname); tick(); });
 $("#pipeline").addEventListener("click", (e) => {
   const b = e.target.closest(".stage"); if (!b) return;
-  state.stage = b.dataset.stage; store.set("finflow.stage", state.stage); render();
+  state.stage = b.dataset.stage; store.set("midas.stage", state.stage); render();
   if (innerWidth < 1100) $("#detail").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 $("#detail").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) { state.tab = b.dataset.tab; render(); } });
@@ -368,10 +368,10 @@ $("#runs").addEventListener("click", (e) => { const tr = e.target.closest("tr[da
 addEventListener("resize", () => { if (state.view === "historial") renderHistory(); });
 
 function applyTheme(t) { t ? (document.documentElement.dataset.theme = t) : delete document.documentElement.dataset.theme; }
-applyTheme(store.get("finflow.theme", null));
+applyTheme(store.get("midas.theme", null));
 $("#btn-theme").addEventListener("click", () => {
   const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(dark ? "light" : "dark"); store.set("finflow.theme", dark ? "light" : "dark");
+  applyTheme(dark ? "light" : "dark"); store.set("midas.theme", dark ? "light" : "dark");
 });
 
 tick();

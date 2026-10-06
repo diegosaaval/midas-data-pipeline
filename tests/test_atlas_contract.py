@@ -1,6 +1,6 @@
-"""Contrato con ATLAS: lo que ATLAS (conectores/finflow.yaml) espera leer de cada publicación.
+"""Contrato con ATLAS: lo que ATLAS (conectores/midas.yaml) espera leer de cada publicación.
 
-Si este test falla, un cambio en FINFLOW rompería el monitoreo: hay que avisar para actualizar el conector de ATLAS.
+Si este test falla, un cambio en MIDAS rompería el monitoreo: hay que avisar para actualizar el conector de ATLAS.
 """
 
 import json

@@ -232,7 +232,7 @@ def write_landing(day: date, settings: Settings | None = None, anomalies: set[st
     * "unknown_column": la fuente agrega una columna no acordada (promo_code) a pagos.
     * "corrupt_lines": algunas líneas JSON llegan truncadas.
     * "approval_drop": la pasarela de tarjetas falla y rechaza 2 de cada 3 pagos con tarjeta. Cada registro
-      es válido (el contrato de FINFLOW no lo puede ver); la tasa de aprobación del día cae y ATLAS lo detecta.
+      es válido (el contrato de MIDAS no lo puede ver); la tasa de aprobación del día cae y ATLAS lo detecta.
     """
     s = settings or get_settings()
     anomalies = anomalies or set()

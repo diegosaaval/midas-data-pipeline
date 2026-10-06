@@ -8,9 +8,9 @@ import pytest
 from conftest import land, make_settings
 from fastapi.testclient import TestClient
 
-from finflow.contracts import ENTITIES
-from finflow.metadata import JobResult, Metadata
-from finflow.ui.api import create_app
+from midas.contracts import ENTITIES
+from midas.metadata import JobResult, Metadata
+from midas.ui.api import create_app
 
 DAY = "2026-09-10"
 
@@ -56,7 +56,7 @@ def test_without_runs_the_api_is_empty_and_serves_the_page(tmp_path):
     assert client.get("/api/runs/latest").status_code == 404
     assert client.get("/api/meta").json()["watermark"] is None
     page = client.get("/")
-    assert page.status_code == 200 and "FINFLOW" in page.text
+    assert page.status_code == 200 and "MIDAS" in page.text
     assert client.get("/app.js").status_code == 200
 
 

@@ -16,7 +16,7 @@ Cada decisión incluye la alternativa descartada y por qué. Es la base para def
 
 **Por qué.** Los reportes financieros se consultan por fecha de transacción. Si se particionara por fecha de llegada, cada consulta de "ventas del 10 de septiembre" tendría que leer todo.
 
-**Límite.** Se aceptan hasta `FINFLOW_LATE_DAYS` (7) días de atraso. Lo más viejo va a cuarentena con el motivo `late:out_of_window` y se recupera con un backfill consciente. El modelo incremental de dbt reprocesa la misma ventana de 7 días.
+**Límite.** Se aceptan hasta `MIDAS_LATE_DAYS` (7) días de atraso. Lo más viejo va a cuarentena con el motivo `late:out_of_window` y se recupera con un backfill consciente. El modelo incremental de dbt reprocesa la misma ventana de 7 días.
 
 ## 3. Bronze guarda todo como texto
 
@@ -40,7 +40,7 @@ Las columnas nuevas **compatibles** (opcionales) se declaran en el contrato con 
 
 ## 7. Airflow orquesta, no transforma
 
-El DAG solo llama al CLI (`finflow task silver.payments --date {{ ds }}`). La lógica vive en Python con tests, y el mismo código puede correr en Airflow, en un Glue Job o en local. `catchup=True` + `max_active_runs=1` garantiza backfills en orden cronológico; los reintentos con backoff exponencial cubren fallas transitorias. Si la fuente no ha entregado el archivo, el runner no reintenta (no ayuda): en Airflow lo cubre un `FileSensor` en modo `reschedule`.
+El DAG solo llama al CLI (`midas task silver.payments --date {{ ds }}`). La lógica vive en Python con tests, y el mismo código puede correr en Airflow, en un Glue Job o en local. `catchup=True` + `max_active_runs=1` garantiza backfills en orden cronológico; los reintentos con backoff exponencial cubren fallas transitorias. Si la fuente no ha entregado el archivo, el runner no reintenta (no ayuda): en Airflow lo cubre un `FileSensor` en modo `reschedule`.
 
 ## 8. dbt sobre DuckDB en local, Athena en la nube
 

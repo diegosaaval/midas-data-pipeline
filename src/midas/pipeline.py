@@ -25,7 +25,7 @@ from .jobs import bronze, features, silver
 from .jobs.bronze import MissingSourceError
 from .metadata import JobResult, Metadata, now
 
-log = logging.getLogger("finflow")
+log = logging.getLogger("midas")
 WATERMARK = "ingest_date"
 GOLD_DATASETS = ("clientes_gold", "pagos_gold", "contracargos_gold", "indicadores_financieros")
 
@@ -35,7 +35,7 @@ class PipelineError(RuntimeError):
 
 
 class InjectedFailure(RuntimeError):
-    """Falla transitoria simulada (FINFLOW_FAIL) para demostrar los reintentos."""
+    """Falla transitoria simulada (MIDAS_FAIL) para demostrar los reintentos."""
 
 
 @dataclass
@@ -50,8 +50,8 @@ class Pipeline:
         self.s = settings or get_settings()
         self.meta = Metadata(self.s.meta_db)
         self._spark = spark
-        self._faults = _parse_faults(os.getenv("FINFLOW_FAIL", ""))
-        self.backoff_seconds = float(os.getenv("FINFLOW_BACKOFF_SECONDS", "2"))
+        self._faults = _parse_faults(os.getenv("MIDAS_FAIL", ""))
+        self.backoff_seconds = float(os.getenv("MIDAS_BACKOFF_SECONDS", "2"))
 
     @property
     def spark(self):
@@ -160,8 +160,8 @@ class Pipeline:
             silver.ensure_table(self.spark, self.s, entity)
         Path(self.s.path("gold")).mkdir(parents=True, exist_ok=True)
         Path(self.s.duckdb).parent.mkdir(parents=True, exist_ok=True)
-        os.environ["FINFLOW_LAKE"] = self.s.lake
-        os.environ["FINFLOW_DUCKDB"] = self.s.duckdb
+        os.environ["MIDAS_LAKE"] = self.s.lake
+        os.environ["MIDAS_DUCKDB"] = self.s.duckdb
         args = ["build", "--project-dir", self.s.dbt_dir, "--profiles-dir", self.s.dbt_dir, "--quiet"]
         if full_refresh:
             args.append("--full-refresh")
@@ -214,7 +214,7 @@ class Pipeline:
 
 
 def _parse_faults(raw: str) -> dict[str, int]:
-    """FINFLOW_FAIL="silver.payments:1,features:2" -> fallar ese número de intentos."""
+    """MIDAS_FAIL="silver.payments:1,features:2" -> fallar ese número de intentos."""
     faults = {}
     for item in filter(None, (x.strip() for x in raw.split(","))):
         name, _, n = item.partition(":")

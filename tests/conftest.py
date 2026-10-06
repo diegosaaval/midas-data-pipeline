@@ -4,18 +4,18 @@ from pathlib import Path
 
 import pytest
 
-from finflow.config import PROJECT_ROOT, Settings
-from finflow.generator import write_landing
-from finflow.pipeline import Pipeline, date_range
-from finflow.spark import get_spark
+from midas.config import PROJECT_ROOT, Settings
+from midas.generator import write_landing
+from midas.pipeline import Pipeline, date_range
+from midas.spark import get_spark
 
 EPOCH = date(2026, 9, 1)
 DAYS = date_range(EPOCH, date(2026, 9, 5))
 
 
 def make_settings(tmp: Path, **kw) -> Settings:
-    base = dict(lake=str(tmp / "lake"), landing=str(tmp / "landing"), meta_db=str(tmp / "meta" / "finflow.db"),
-                duckdb=str(tmp / "warehouse" / "finflow.duckdb"), seed=7, scale=0.05, epoch=EPOCH,
+    base = dict(lake=str(tmp / "lake"), landing=str(tmp / "landing"), meta_db=str(tmp / "meta" / "midas.db"),
+                duckdb=str(tmp / "warehouse" / "midas.duckdb"), seed=7, scale=0.05, epoch=EPOCH,
                 schema_v2_from=date(2026, 9, 3), late_data_days=7, max_retries=2, shuffle_partitions=2,
                 dbt_dir=str(PROJECT_ROOT / "dbt"))
     return Settings(**(base | kw))
@@ -23,7 +23,7 @@ def make_settings(tmp: Path, **kw) -> Settings:
 
 @pytest.fixture(scope="session")
 def spark():
-    s = get_spark(make_settings(Path("/tmp")), app="finflow-tests")
+    s = get_spark(make_settings(Path("/tmp")), app="midas-tests")
     yield s
     s.stop()
 

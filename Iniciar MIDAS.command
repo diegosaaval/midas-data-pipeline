@@ -1,8 +1,8 @@
 #!/bin/bash
-# FINFLOW · doble clic en Mac para instalar todo (solo la primera vez) y abrir la pantalla de etapas.
+# MIDAS · doble clic en Mac para instalar todo (solo la primera vez) y abrir la pantalla de etapas.
 cd "$(dirname "$0")" || exit 1
 echo
-echo "  Iniciando FINFLOW…"
+echo "  Iniciando MIDAS…"
 echo
 
 PY=""

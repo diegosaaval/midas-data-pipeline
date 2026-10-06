@@ -1,6 +1,6 @@
-# FINFLOW · Pipeline de datos financieros
+# MIDAS · Pipeline de datos financieros
 
-**Procesamiento diario de los datos de una fintech: de los archivos que entregan las fuentes a tablas gold confiables, con PySpark, dbt y Airflow.**
+**Convierte los datos crudos de una fintech en tablas gold confiables: landing → bronze → silver con PySpark → gold con dbt, orquestado con Airflow.**
 
 ![python](https://img.shields.io/badge/python-3.11--3.13-blue)
 ![pyspark](https://img.shields.io/badge/PySpark-4.x-orange)
@@ -9,17 +9,38 @@
 ![tests](https://img.shields.io/badge/tests-47%20pasando-brightgreen)
 ![coverage](https://img.shields.io/badge/cobertura-95%25-brightgreen)
 
-> 🇬🇧 *FINFLOW is a daily batch pipeline for synthetic fintech data (customers, merchants, payments, refunds, chargebacks): landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills and run metrics. Runs locally today; designed for S3 + Glue + Athena.*
+> 🇬🇧 *MIDAS turns raw fintech data (customers, merchants, payments, refunds, chargebacks) into trusted gold tables: landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills, run metrics and a live stage view. Monitored by [ATLAS](https://github.com/diegosaaval/atlas-data-quality).*
 
-Proyecto complementario de [ATLAS](https://github.com/diegosaaval/atlas-data-quality): **FINFLOW construye los datos, ATLAS verifica que sean confiables.**
+**¿Por qué MIDAS?** El rey Midas convertía en oro todo lo que tocaba. Este pipeline lleva los datos por bronze y silver hasta la capa **gold**. Pero el oro de Midas no siempre era lo que parecía: por eso existe su proyecto hermano, [ATLAS](https://github.com/diegosaaval/atlas-data-quality), que verifica que lo publicado sea oro de verdad.
+
+> **MIDAS convierte datos crudos en oro; ATLAS verifica que sea oro de verdad.**
 
 ---
+
+## Demo
+
+**La historia completa en 3 minutos, con las dos pantallas.** Clona los dos repositorios lado a lado:
+
+```bash
+git clone https://github.com/diegosaaval/midas-data-pipeline.git
+git clone https://github.com/diegosaaval/atlas-data-quality.git
+```
+
+Y haz **doble clic en `Ver demo MIDAS + ATLAS.command`** (Mac) o **`Ver demo MIDAS + ATLAS.bat`** (Windows). La primera vez instala todo (Python 3.12 incluido si hace falta; para Spark se necesita Java 17+). Luego enciende ATLAS, lo conecta a MIDAS, abre las dos pantallas y cuenta la historia paso a paso (Enter para avanzar):
+
+1. **MIDAS procesa un mes** de una fintech. En la pantalla de etapas cada capa se enciende y las filas fluyen de una a otra; MIDAS aparta en cuarentena ~425 registros inválidos con su motivo, elimina ~1.250 duplicados e integra ~9.400 filas tardías a su fecha real.
+2. **ATLAS valida lo publicado**: las 4 tablas gold con sus 23 reglas, en verde.
+3. **El 1 de octubre se cae la pasarela de tarjetas**: 2 de cada 3 pagos con tarjeta se rechazan. Cada registro es válido, así que MIDAS lo publica con todo en OK.
+4. **ATLAS detecta lo que ninguna regla podía ver**: la tasa de aprobación cae de 0,92 a 0,59 (7σ por debajo de lo normal) y abre un incidente para el responsable.
+5. **Del incidente a la corrida que lo trajo**: el botón de ATLAS abre MIDAS justo en esa corrida.
+
+Desde la terminal es lo mismo con `make show` (o `make show AUTO=1`, con pausas fijas para grabar). Si solo quieres ver MIDAS, doble clic en `Iniciar MIDAS.command` / `.bat`: abre la pantalla de etapas y, la primera vez, corre un mes de datos para que lo veas avanzar.
 
 ## El problema
 
 Una fintech recibe cada día archivos de cinco sistemas: clientes, comercios, pagos, devoluciones y contracargos. Esos archivos **nunca llegan perfectos**:
 
-| Problema real | Qué hace FINFLOW |
+| Problema real | Qué hace MIDAS |
 |---|---|
 | El mismo pago llega dos veces, o llega `pending` y al otro día `approved` | **Deduplicación** por llave de negocio: gana la versión más reciente (`updated_at`) |
 | Pagos de hace 3 días aparecen en el archivo de hoy | **Datos tardíos**: se integran a la partición de su fecha real, sin reescribir el resto |
@@ -54,7 +75,7 @@ flowchart LR
 | **quarantine** | Registros rechazados, en JSON crudo, con la lista de motivos | Por `ingest_date` |
 | **gold** | Modelos dbt: `fct_payments` (incremental), dimensiones, y 4 datasets publicados | dbt; un manifiesto `_manifest.json` por publicación |
 
-**Orquestación.** Airflow 3 ejecuta un DAG diario (`catchup=True`, `max_active_runs=1`) con reintentos y backoff exponencial. Cada tarea llama al CLI `finflow task …`, así que toda la lógica vive en Python probado y el DAG queda delgado.
+**Orquestación.** Airflow 3 ejecuta un DAG diario (`catchup=True`, `max_active_runs=1`) con reintentos y backoff exponencial. Cada tarea llama al CLI `midas task …`, así que toda la lógica vive en Python probado y el DAG queda delgado.
 
 ## Lo que demuestra en PySpark
 
@@ -89,7 +110,7 @@ flowchart LR
 | Duración total (bronze → gold) | 2 min 42 s |
 | Reintentos | 1 falla transitoria simulada en `silver.payments`, recuperada sola |
 
-`finflow status` muestra estas métricas por tarea en la terminal; la **pantalla de etapas** las muestra como un diagrama en vivo.
+`midas status` muestra estas métricas por tarea en la terminal; la **pantalla de etapas** las muestra como un diagrama en vivo.
 
 ## Pantalla de etapas
 
@@ -103,27 +124,18 @@ Cada corrida se ve como un pipeline: `Fuentes → Bronze → Silver → Features
 
 Cómo abrirla:
 
-- **Doble clic** en `Iniciar FINFLOW.command` (Mac) o `Iniciar FINFLOW.bat` (Windows). La primera vez instala todo, crea un acceso directo «FINFLOW» con su ícono en el escritorio y, si no hay datos, corre la demo de 30 días para que la veas avanzar.
-- **Terminal:** `finflow ui` (o `make ui`) y luego `finflow run` en otra terminal.
+- **Doble clic** en `Iniciar MIDAS.command` (Mac) o `Iniciar MIDAS.bat` (Windows). La primera vez instala todo, crea un acceso directo «MIDAS» con su ícono en el escritorio y, si no hay datos, corre la demo de 30 días para que la veas avanzar.
+- **Terminal:** `midas ui` (o `make ui`) y luego `midas run` en otra terminal.
 
-La pantalla **solo lee** `data/meta/finflow.db` (tablas `runs`, `task_runs`, `schema_events`, `watermarks`), que se abre en modo de solo lectura: no cambia nada del pipeline. Es FastAPI más HTML, CSS y JavaScript sin compilación, con gráficos SVG propios, modo claro y oscuro. API documentada en `http://localhost:8100/docs`.
+La pantalla **solo lee** `data/meta/midas.db` (tablas `runs`, `task_runs`, `schema_events`, `watermarks`), que se abre en modo de solo lectura: no cambia nada del pipeline. Es FastAPI más HTML, CSS y JavaScript sin compilación, con gráficos SVG propios, modo claro y oscuro. API documentada en `http://localhost:8100/docs`.
 
 ## Monitoreado por ATLAS
 
-FINFLOW construye los datos; [ATLAS](https://github.com/diegosaaval/atlas-data-quality) verifica que sean confiables. ATLAS lee las cuatro tablas gold (`data/lake/gold/*.parquet`) y vigila `_manifest.json`: cada vez que FINFLOW publica, ATLAS valida las fechas nuevas con sus reglas (montos, estados, tasas entre 0 y 1, documentos, contracargos).
+MIDAS produce los datos; [ATLAS](https://github.com/diegosaaval/atlas-data-quality) verifica que sean confiables. ATLAS lee las cuatro tablas gold (`data/lake/gold/*.parquet`) y vigila `_manifest.json`: cada vez que MIDAS publica, ATLAS valida las fechas nuevas con sus reglas (montos, estados, tasas entre 0 y 1, documentos, contracargos).
 
-Para conectarlo, abre ATLAS y elige **FINFLOW** en su botón *Fuente de datos*, o arráncalo con `./start.sh --fuente finflow`.
+Para conectarlo, abre ATLAS y elige **MIDAS** en su botón *Fuente de datos*, o arráncalo con `./start.sh --fuente midas`.
 
-**La demo de los dos, en un comando.** Con ATLAS abierto (`cd ../atlas-one && ./start.sh --fuente finflow`):
-
-```bash
-make show          # presenta paso a paso: Enter para avanzar
-make show AUTO=1   # pausas fijas, para grabar un video
-```
-
-Abre las dos pantallas, procesa el mes desde cero, deja que ATLAS lo valide, provoca el incidente y termina en la corrida que lo trajo. Al reiniciar, la última publicación gold se conserva hasta que la nueva la reemplace: ATLAS nunca ve tablas a medio escribir.
-
-**Un incidente de punta a punta** (`make incidente`, después de `make demo`). El 1 de octubre la pasarela de tarjetas falla y rechaza 2 de cada 3 pagos con tarjeta. Cada registro es válido (estado `declined`, monto correcto, cliente existente), así que el contrato de FINFLOW no tiene nada que rechazar y lo publica. ATLAS compara el día con su historia: la tasa de aprobación cae de 0,92 a 0,59 (7,2σ por debajo de lo normal) y abre un incidente para el responsable. Es la división de trabajo entre los dos proyectos: **FINFLOW detiene los registros que incumplen las reglas que conoce; ATLAS detecta lo que ninguna regla por registro puede ver.**
+**Un incidente de punta a punta** (`make incidente`, después de `make demo`; o completo con `make show`). El 1 de octubre la pasarela de tarjetas falla y rechaza 2 de cada 3 pagos con tarjeta. Cada registro es válido (estado `declined`, monto correcto, cliente existente), así que el contrato de MIDAS no tiene nada que rechazar y lo publica. ATLAS compara el día con su historia: la tasa de aprobación cae de 0,92 a 0,59 (7,2σ por debajo de lo normal) y abre un incidente para el responsable. Es la división de trabajo entre los dos proyectos: **MIDAS detiene los registros que incumplen las reglas que conoce; ATLAS detecta lo que ninguna regla por registro puede ver.**
 
 **Contrato.** Cada publicación mantiene en el manifiesto `published_at` (ISO 8601 con zona horaria), `dates`, `run_id` y `datasets` (filas por tabla), y las columnas sobre las que ATLAS tiene reglas. Además incluye `kind` (incremental, re-proceso o backfill) y `quality` (registros en cuarentena por motivo, duplicados eliminados y filas tardías), y la pantalla de etapas abre cualquier corrida con `http://localhost:8100/#run=<run_id>`. `tests/test_atlas_contract.py` lo verifica: si un cambio lo rompe, el CI falla antes de que el monitoreo se entere.
 
@@ -140,20 +152,20 @@ make ui          # abre la pantalla de etapas en http://localhost:8100
 Comandos útiles:
 
 ```bash
-finflow generate --start 2026-09-01 --end 2026-09-30   # simular las fuentes
-finflow run                                           # incremental: solo fechas nuevas (watermark)
-finflow run --date 2026-09-10                         # re-procesar un día (idempotente)
-finflow backfill --start 2026-09-05 --end 2026-09-08  # re-procesar un rango
-FINFLOW_FAIL=silver.payments:1 finflow run --date 2026-09-10   # ver un reintento en acción
-finflow status                                        # métricas de las últimas corridas
+midas generate --start 2026-09-01 --end 2026-09-30   # simular las fuentes
+midas run                                           # incremental: solo fechas nuevas (watermark)
+midas run --date 2026-09-10                         # re-procesar un día (idempotente)
+midas backfill --start 2026-09-05 --end 2026-09-08  # re-procesar un rango
+MIDAS_FAIL=silver.payments:1 midas run --date 2026-09-10   # ver un reintento en acción
+midas status                                        # métricas de las últimas corridas
 make dbt-docs                                         # documentación de los modelos dbt
 ```
 
 **Con Docker** (Airflow + Postgres + Spark):
 
 ```bash
-docker compose up --build                 # Airflow en http://localhost:8080 → activar el DAG finflow_daily
-docker compose run --rm finflow status    # CLI dentro del contenedor
+docker compose up --build                 # Airflow en http://localhost:8080 → activar el DAG midas_daily
+docker compose run --rm midas status    # CLI dentro del contenedor
 ```
 
 ## Cómo se prueba
@@ -181,7 +193,7 @@ Detalle de decisiones y alternativas en [docs/DECISIONES.md](docs/DECISIONES.md)
 ## Estructura
 
 ```
-src/finflow/
+src/midas/
   contracts.py      contratos de datos (columnas, tipos, reglas, llave de negocio, versiones)
   generator.py      fuentes sintéticas determinísticas con problemas reales inyectados
   jobs/bronze.py    landing → bronze
@@ -190,13 +202,13 @@ src/finflow/
   pipeline.py       runner: incremental, por fecha, backfill, reintentos, dbt, publicación
   metadata.py       registro de corridas, tareas, eventos de esquema y watermark
   cli.py            interfaz de línea de comandos (la usa Airflow)
-  show.py           demo en vivo de FINFLOW + ATLAS (make show)
+  show.py           demo en vivo de MIDAS + ATLAS (make show)
   ui/               pantalla de etapas: API de solo lectura (FastAPI) + web/ (HTML, CSS, JS)
 dbt/                proyecto dbt (perfiles DuckDB local y Athena)
 airflow/dags/       DAG diario
-docker/             imagen de Airflow con Java + finflow
+docker/             imagen de Airflow con Java + midas
 tests/              47 tests
-run.py              lanzador de doble clic (Iniciar FINFLOW.command / .bat)
+run.py              lanzador de doble clic (Iniciar MIDAS.command / .bat)
 ```
 
 ## Roadmap
@@ -206,7 +218,7 @@ run.py              lanzador de doble clic (Iniciar FINFLOW.command / .bat)
 - [ ] **Fase 3: Terraform.** Buckets (cifrado, bloqueo público, ciclo de vida), roles IAM de mínimo privilegio, bases de Glue y workgroup de Athena.
 - [ ] **Fase 4: dbt en Athena.** Marts financieros incrementales sobre Iceberg.
 - [ ] **Fase 5: optimización.** Métricas de costo por corrida, compactación y comparación de planes.
-- [x] **Fase 6: integración con ATLAS.** ATLAS monitorea los cuatro datasets gold que publica FINFLOW (contrato probado en CI).
+- [x] **Fase 6: integración con ATLAS.** ATLAS monitorea los cuatro datasets gold que publica MIDAS (contrato probado en CI).
 - [x] **Pantalla de etapas.** Cada corrida como un diagrama en vivo, con detalle, calidad e historial.
 
 ## Licencia

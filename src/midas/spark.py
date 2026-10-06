@@ -10,7 +10,7 @@ from pyspark.sql import DataFrame, SparkSession
 from .config import Settings, get_settings
 
 
-def get_spark(settings: Settings | None = None, app: str = "finflow") -> SparkSession:
+def get_spark(settings: Settings | None = None, app: str = "midas") -> SparkSession:
     s = settings or get_settings()
     # Los workers de Python deben usar el mismo intérprete que el driver (mismo venv).
     os.environ.setdefault("PYSPARK_PYTHON", sys.executable)

@@ -4,9 +4,9 @@ from pathlib import Path
 from conftest import land, payment
 from pyspark.sql import functions as F
 
-from finflow.jobs import bronze, silver
-from finflow.metadata import Metadata
-from finflow.spark import explain_string
+from midas.jobs import bronze, silver
+from midas.metadata import Metadata
+from midas.spark import explain_string
 
 D1, D2, D3 = date(2026, 9, 10), date(2026, 9, 11), date(2026, 9, 12)
 MERCHANT = {"merchant_id": "M0001", "name": "x", "category": "marketplace", "city": "Bogotá", "status": "active",

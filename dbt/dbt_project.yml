@@ -1,7 +1,7 @@
-name: finflow
+name: midas
 version: "0.1.0"
 config-version: 2
-profile: finflow
+profile: midas
 
 model-paths: ["models"]
 test-paths: ["tests"]
@@ -14,7 +14,7 @@ vars:
   usd_cop: 4000          # tasa fija de referencia para normalizar montos en USD
 
 models:
-  finflow:
+  midas:
     staging:
       +materialized: view
     marts:

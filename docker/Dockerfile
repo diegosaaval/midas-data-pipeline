@@ -1,4 +1,4 @@
-# Imagen de Airflow con Java (Spark) y el paquete finflow instalado.
+# Imagen de Airflow con Java (Spark) y el paquete midas instalado.
 FROM apache/airflow:3.3.2-python3.12
 
 USER root
@@ -9,13 +9,13 @@ RUN apt-get update \
 ENV JAVA_HOME=/usr/lib/jvm/java-17
 
 USER airflow
-WORKDIR /opt/finflow
+WORKDIR /opt/midas
 COPY --chown=airflow:root pyproject.toml README.md ./
 COPY --chown=airflow:root src ./src
 COPY --chown=airflow:root dbt ./dbt
 RUN pip install --no-cache-dir -e .
 
-ENV FINFLOW_LAKE=/opt/finflow/data/lake \
-    FINFLOW_LANDING=/opt/finflow/data/landing \
-    FINFLOW_META_DB=/opt/finflow/data/meta/finflow.db \
-    FINFLOW_DUCKDB=/opt/finflow/data/warehouse/finflow.duckdb
+ENV MIDAS_LAKE=/opt/midas/data/lake \
+    MIDAS_LANDING=/opt/midas/data/landing \
+    MIDAS_META_DB=/opt/midas/data/meta/midas.db \
+    MIDAS_DUCKDB=/opt/midas/data/warehouse/midas.duckdb

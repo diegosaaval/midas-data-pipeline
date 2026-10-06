@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title FINFLOW - Etapas del pipeline
+title MIDAS + ATLAS - Demo
 cd /d "%~dp0"
 echo.
-echo   Iniciando FINFLOW...
+echo   Iniciando la demo de MIDAS + ATLAS...
 echo.
 
 rem ---- 1. Buscar Python 3.11 o mas reciente ----
@@ -36,7 +36,7 @@ exit /b 1
 
 :python_listo
 rem ---- 3. Preparar, crear el acceso directo y arrancar ----
-%PY% run.py %*
+%PY% run.py --show %*
 if errorlevel 1 (
   echo.
   echo   Algo fallo. Toma una foto de esta ventana para revisarlo.

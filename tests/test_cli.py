@@ -2,14 +2,14 @@
 
 import pytest
 
-from finflow.cli import main
+from midas.cli import main
 
 
 @pytest.fixture
 def env(tmp_path, monkeypatch, spark):
-    for key, value in {"FINFLOW_LAKE": tmp_path / "lake", "FINFLOW_LANDING": tmp_path / "landing",
-                       "FINFLOW_META_DB": tmp_path / "meta" / "m.db", "FINFLOW_DUCKDB": tmp_path / "wh" / "f.duckdb",
-                       "FINFLOW_SCALE": "0.03", "FINFLOW_BACKOFF_SECONDS": "0"}.items():
+    for key, value in {"MIDAS_LAKE": tmp_path / "lake", "MIDAS_LANDING": tmp_path / "landing",
+                       "MIDAS_META_DB": tmp_path / "meta" / "m.db", "MIDAS_DUCKDB": tmp_path / "wh" / "f.duckdb",
+                       "MIDAS_SCALE": "0.03", "MIDAS_BACKOFF_SECONDS": "0"}.items():
         monkeypatch.setenv(key, str(value))
     return tmp_path
 

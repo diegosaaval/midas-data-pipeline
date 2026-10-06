@@ -20,7 +20,7 @@ jobs:
         with: {python-version: "3.12", cache: pip}
       - run: pip install -e ".[dev]"
       - run: ruff check .
-      - run: pytest --cov=finflow --cov-report=term-missing
+      - run: pytest --cov=midas --cov-report=term-missing
       - name: dbt parse (valida modelos, refs y tests)
         working-directory: dbt
         run: dbt parse --profiles-dir .
@@ -41,5 +41,5 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f docker/Dockerfile -t finflow-airflow:ci .
-      - run: docker run --rm --entrypoint finflow finflow-airflow:ci --help
+      - run: docker build -f docker/Dockerfile -t midas-airflow:ci .
+      - run: docker run --rm --entrypoint midas midas-airflow:ci --help

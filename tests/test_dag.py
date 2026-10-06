@@ -7,11 +7,11 @@ import pytest
 
 pytest.importorskip("airflow")
 
-DAG_FILE = Path(__file__).resolve().parents[1] / "airflow" / "dags" / "finflow_daily.py"
+DAG_FILE = Path(__file__).resolve().parents[1] / "airflow" / "dags" / "midas_daily.py"
 
 
 def load_dag():
-    spec = importlib.util.spec_from_file_location("finflow_daily", DAG_FILE)
+    spec = importlib.util.spec_from_file_location("midas_daily", DAG_FILE)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # falla aquí si el DAG tiene errores de importación
     return module.dag
@@ -19,7 +19,7 @@ def load_dag():
 
 def test_dag_structure():
     dag = load_dag()
-    assert dag.dag_id == "finflow_daily"
+    assert dag.dag_id == "midas_daily"
     assert dag.catchup and dag.max_active_runs == 1
     assert {"bronze.payments", "silver.payments", "features", "dbt_build", "publish"} <= set(dag.task_ids)
 
