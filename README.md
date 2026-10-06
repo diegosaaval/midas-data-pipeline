@@ -6,7 +6,7 @@
 ![pyspark](https://img.shields.io/badge/PySpark-4.x-orange)
 ![dbt](https://img.shields.io/badge/dbt-duckdb%20%7C%20athena-ff694b)
 ![airflow](https://img.shields.io/badge/Airflow-3.x-017cee)
-![tests](https://img.shields.io/badge/tests-50%20pasando-brightgreen)
+![tests](https://img.shields.io/badge/tests-56%20pasando-brightgreen)
 ![coverage](https://img.shields.io/badge/cobertura-93%25-brightgreen)
 
 > 🇬🇧 *MIDAS turns raw fintech data (customers, merchants, payments, refunds, chargebacks) into trusted gold tables: landing → bronze → silver with PySpark (data contracts, quarantine, dedup, late-arriving data, schema evolution, idempotent partition overwrite) → gold with dbt (incremental models, tests), orchestrated by Airflow, with retries, backfills, run metrics and a live stage view. Monitored by [ATLAS](https://github.com/diegosaaval/atlas-data-quality).*
@@ -21,8 +21,12 @@
 
 | ▶️ MIDAS · 2 min | ▶️ MIDAS + ATLAS · 1:49 |
 |---|---|
-| [![Video de MIDAS](media/miniatura-midas.png)](media/MIDAS-demo.mp4) | [![Video de MIDAS + ATLAS](media/miniatura-midas-atlas.png)](media/MIDAS-ATLAS-demo.mp4) |
+| [![Video de MIDAS](media/miniatura-midas.png)](https://youtu.be/KFIgQx3N6a8) | [![Video de MIDAS + ATLAS](media/miniatura-midas-atlas.png)](https://youtu.be/PXF2G3ek3ZU) |
 | El dolor, bronze → silver → gold y un mes real con un reintento, cuarentena y explain plans. | Un pipeline en verde no significa datos correctos: la caída de la pasarela que solo ATLAS ve. |
+
+🟢 **Demo en vivo:** [MIDAS · pantalla de etapas](https://midas-data-pipeline.onrender.com) + [ATLAS validándolo](https://atlas-midas.onrender.com) *(si llevan rato sin visitas, tardan cerca de un minuto en despertar)*
+
+La demo web es una **vitrina**: Spark no cabe en un servidor gratuito, así que la pantalla de MIDAS repite en bucle una corrida real grabada (el mes con su reintento y el día en que se cae la pasarela, unos 4 minutos) y publica sus tablas gold y su manifiesto en `/vitrina/gold/`. ATLAS las lee por internet como si MIDAS estuviera corriendo: valida septiembre en verde, abre el incidente del 1 de octubre y su botón vuelve a la corrida que lo trajo. [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/diegosaaval/midas-data-pipeline) despliega los dos servicios (`render.yaml`).
 
 **Pruébalo tú mismo: la historia completa, con las dos pantallas.** Clona los dos repositorios lado a lado:
 
@@ -176,7 +180,7 @@ docker compose run --rm midas status    # CLI dentro del contenedor
 ## Cómo se prueba
 
 ```bash
-make test        # 48 tests (PySpark + dbt reales + API de la pantalla + show) · cobertura 93%
+make test        # 54 tests (PySpark + dbt reales + API de la pantalla + show) · cobertura 93%
 ```
 
 Cada problema de ingeniería tiene un test con datos construidos a mano: cuarentena por motivo, dedup, datos tardíos sin tocar otras particiones (se verifica la fecha de modificación de los archivos), idempotencia, evolución de esquema, reglas entre entidades, partition pruning en el plan físico, reintentos, fallas permanentes, backfill sin mover el watermark y fuente faltante sin reintento. La API de la pantalla tiene sus propios tests (estado de cada etapa en vivo, reintentos, fallas, corridas interrumpidas, solo lectura) y el contrato con ATLAS se valida sobre una corrida real. El DAG se valida contra Airflow 3 real en CI.
@@ -209,10 +213,12 @@ src/midas/
   cli.py            interfaz de línea de comandos (la usa Airflow)
   show.py           demo en vivo de MIDAS + ATLAS (make show)
   ui/               pantalla de etapas: API de solo lectura (FastAPI) + web/ (HTML, CSS, JS)
+  ui/vitrina.py     demo web: repite en bucle una corrida real y publica gold para ATLAS
 dbt/                proyecto dbt (perfiles DuckDB local y Athena)
 airflow/dags/       DAG diario
 docker/             imagen de Airflow con Java + midas
-tests/              50 tests
+tests/              56 tests
+vitrina/            la corrida grabada que repite la demo web (~6 MB)
 run.py              lanzador de doble clic (Iniciar MIDAS.command / .bat)
 ```
 

@@ -1,0 +1,129 @@
+== Physical Plan ==
+AdaptiveSparkPlan (20)
++- HashAggregate (19)
+   +- Exchange (18)
+      +- HashAggregate (17)
+         +- HashAggregate (16)
+            +- Exchange (15)
+               +- HashAggregate (14)
+                  +- Project (13)
+                     +- BroadcastHashJoin LeftOuter BuildRight (12)
+                        :- Project (8)
+                        :  +- BroadcastHashJoin LeftOuter BuildRight (7)
+                        :     :- Project (3)
+                        :     :  +- Filter (2)
+                        :     :     +- Scan parquet  (1)
+                        :     +- BroadcastExchange (6)
+                        :        +- Filter (5)
+                        :           +- Scan parquet  (4)
+                        +- BroadcastExchange (11)
+                           +- Filter (10)
+                              +- Scan parquet  (9)
+
+
+(1) Scan parquet 
+Output [5]: [customer_id#2228, merchant_id#2229, amount#2230, status#2233, dt#2240]
+Batched: true
+Location: InMemoryFileIndex [file:/Users/dsaavedr/Downloads/midas-data-pipeline/data/lake/silver/payments]
+PartitionFilters: [isnotnull(dt#2240), (dt#2240 = 2026-09-01)]
+PushedFilters: [IsNotNull(status), EqualTo(status,approved)]
+ReadSchema: struct<customer_id:string,merchant_id:string,amount:double,status:string>
+
+(2) Filter
+Input [5]: [customer_id#2228, merchant_id#2229, amount#2230, status#2233, dt#2240]
+Condition : (isnotnull(status#2233) AND (status#2233 = approved))
+
+(3) Project
+Output [4]: [customer_id#2228, merchant_id#2229, amount#2230, dt#2240]
+Input [5]: [customer_id#2228, merchant_id#2229, amount#2230, status#2233, dt#2240]
+
+(4) Scan parquet 
+Output [2]: [merchant_id#2242, category#2244]
+Batched: true
+Location: InMemoryFileIndex [file:/Users/dsaavedr/Downloads/midas-data-pipeline/data/lake/silver/merchants]
+PushedFilters: [IsNotNull(merchant_id)]
+ReadSchema: struct<merchant_id:string,category:string>
+
+(5) Filter
+Input [2]: [merchant_id#2242, category#2244]
+Condition : isnotnull(merchant_id#2242)
+
+(6) BroadcastExchange
+Input [2]: [merchant_id#2242, category#2244]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=4394]
+
+(7) BroadcastHashJoin
+Left keys [1]: [merchant_id#2229]
+Right keys [1]: [merchant_id#2242]
+Join type: LeftOuter
+Join condition: None
+
+(8) Project
+Output [5]: [merchant_id#2229, customer_id#2228, amount#2230, dt#2240, category#2244]
+Input [6]: [customer_id#2228, merchant_id#2229, amount#2230, dt#2240, merchant_id#2242, category#2244]
+
+(9) Scan parquet 
+Output [1]: [customer_id#2252]
+Batched: true
+Location: InMemoryFileIndex [file:/Users/dsaavedr/Downloads/midas-data-pipeline/data/lake/silver/customers]
+PushedFilters: [IsNotNull(customer_id)]
+ReadSchema: struct<customer_id:string>
+
+(10) Filter
+Input [1]: [customer_id#2252]
+Condition : isnotnull(customer_id#2252)
+
+(11) BroadcastExchange
+Input [1]: [customer_id#2252]
+Arguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=4398]
+
+(12) BroadcastHashJoin
+Left keys [1]: [customer_id#2228]
+Right keys [1]: [customer_id#2252]
+Join type: LeftOuter
+Join condition: None
+
+(13) Project
+Output [5]: [merchant_id#2229, amount#2230, dt#2240, category#2244, cast((rand(739860) * 8.0) as int) AS _salt#2277]
+Input [6]: [merchant_id#2229, customer_id#2228, amount#2230, dt#2240, category#2244, customer_id#2252]
+
+(14) HashAggregate
+Input [5]: [merchant_id#2229, amount#2230, dt#2240, category#2244, _salt#2277]
+Keys [4]: [dt#2240, merchant_id#2229, category#2244, _salt#2277]
+Functions [3]: [partial_count(1), partial_sum(amount#2230), partial_max(amount#2230)]
+Aggregate Attributes [3]: [count#2324L, sum#2325, max#2326]
+Results [7]: [dt#2240, merchant_id#2229, category#2244, _salt#2277, count#2327L, sum#2328, max#2329]
+
+(15) Exchange
+Input [7]: [dt#2240, merchant_id#2229, category#2244, _salt#2277, count#2327L, sum#2328, max#2329]
+Arguments: hashpartitioning(dt#2240, merchant_id#2229, category#2244, _salt#2277, 8), ENSURE_REQUIREMENTS, [plan_id=4403]
+
+(16) HashAggregate
+Input [7]: [dt#2240, merchant_id#2229, category#2244, _salt#2277, count#2327L, sum#2328, max#2329]
+Keys [4]: [dt#2240, merchant_id#2229, category#2244, _salt#2277]
+Functions [3]: [count(1), sum(amount#2230), max(amount#2230)]
+Aggregate Attributes [3]: [count(1)#2298L, sum(amount#2230)#2299, max(amount#2230)#2300]
+Results [6]: [dt#2240, merchant_id#2229, category#2244, count(1)#2298L AS n#2278L, sum(amount#2230)#2299 AS tpv#2279, max(amount#2230)#2300 AS max_ticket#2280]
+
+(17) HashAggregate
+Input [6]: [dt#2240, merchant_id#2229, category#2244, n#2278L, tpv#2279, max_ticket#2280]
+Keys [3]: [dt#2240, merchant_id#2229, category#2244]
+Functions [3]: [partial_sum(n#2278L), partial_sum(tpv#2279), partial_max(max_ticket#2280)]
+Aggregate Attributes [3]: [sum#2318L, sum#2319, max#2320]
+Results [6]: [dt#2240, merchant_id#2229, category#2244, sum#2321L, sum#2322, max#2323]
+
+(18) Exchange
+Input [6]: [dt#2240, merchant_id#2229, category#2244, sum#2321L, sum#2322, max#2323]
+Arguments: hashpartitioning(dt#2240, merchant_id#2229, category#2244, 8), ENSURE_REQUIREMENTS, [plan_id=4407]
+
+(19) HashAggregate
+Input [6]: [dt#2240, merchant_id#2229, category#2244, sum#2321L, sum#2322, max#2323]
+Keys [3]: [dt#2240, merchant_id#2229, category#2244]
+Functions [3]: [sum(n#2278L), sum(tpv#2279), max(max_ticket#2280)]
+Aggregate Attributes [3]: [sum(n#2278L)#2311L, sum(tpv#2279)#2312, max(max_ticket#2280)#2313]
+Results [6]: [dt#2240, merchant_id#2229, category#2244, sum(n#2278L)#2311L AS approved_payments#2301L, sum(tpv#2279)#2312 AS tpv#2302, max(max_ticket#2280)#2313 AS max_ticket#2303]
+
+(20) AdaptiveSparkPlan
+Output [6]: [dt#2240, merchant_id#2229, category#2244, approved_payments#2301L, tpv#2302, max_ticket#2303]
+Arguments: isFinalPlan=false
+

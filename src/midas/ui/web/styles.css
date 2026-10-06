@@ -136,6 +136,9 @@ main { max-width: 1240px; margin: 0 auto; padding: 36px 28px 110px; }
 a.btn:hover { text-decoration: none; }
 pre.cmd { background: var(--fill-2); border-radius: var(--r-sm); padding: 12px 14px; font: 13px var(--mono); margin: 12px 0; }
 
+.vitrina-bar { text-align: center; font-size: 13px; color: var(--text-2); padding: 9px 20px; background: var(--fill-2); border-bottom: 0.5px solid var(--border); }
+.vitrina-bar b { color: var(--warning-ink); }
+
 /* ---- estados -------------------------------------------------------------------------- */
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--fill-2); color: var(--text-2); white-space: nowrap; }
 .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .9; }

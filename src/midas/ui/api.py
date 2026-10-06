@@ -63,12 +63,21 @@ class Store:
 
     def __init__(self, settings: Settings) -> None:
         self.s = settings
+        self.plans_dir = Path(settings.meta_db).parent / "plans"
         self._lines: dict[str, tuple[float, int]] = {}
 
-    def rows(self, sql: str, params: tuple = ()) -> list[dict]:
+    def now(self) -> float:
+        return time.time()
+
+    def connect(self) -> sqlite3.Connection | None:
         if not Path(self.s.meta_db).exists():
+            return None
+        return sqlite3.connect(f"file:{self.s.meta_db}?mode=ro", uri=True, timeout=5)
+
+    def rows(self, sql: str, params: tuple = ()) -> list[dict]:
+        conn = self.connect()
+        if conn is None:
             return []
-        conn = sqlite3.connect(f"file:{self.s.meta_db}?mode=ro", uri=True, timeout=5)
         conn.row_factory = sqlite3.Row
         try:
             return [dict(r) for r in conn.execute(sql, params)]
@@ -91,7 +100,7 @@ class Store:
         return [self._run_summary(r, by_run.get(r["run_id"], [])) for r in runs]
 
     def _run_summary(self, run: dict, tasks: list[dict]) -> dict:
-        now = time.time()
+        now = self.now()
         stage_secs = {key: 0.0 for key, _, _ in STAGES[1:]}
         last = _ts(run["started_at"]) or now
         retries = 0
@@ -143,7 +152,7 @@ class Store:
 
         flows = [stages[1]["rows_read"], stages[2]["rows_read"], stages[3]["rows_read"],
                  stages[2]["rows_written"], stages[5]["rows_written"]]
-        started, finished = summary["started_at"], summary["finished_at"] or datetime.now(UTC).isoformat()
+        started, finished = summary["started_at"], summary["finished_at"] or datetime.fromtimestamp(self.now(), UTC).isoformat()
         events = self.rows("SELECT * FROM schema_events WHERE detected_at >= ? AND detected_at <= ? ORDER BY detected_at",
                            (started, finished))
         for e in events:
@@ -153,7 +162,7 @@ class Store:
                 "publish_ok": stages[5]["status"] in ("ok", "retried")}
 
     def _stage(self, key: str, name: str, tasks: list[dict], expected: int, running: bool) -> dict:
-        now = time.time()
+        now = self.now()
         units: dict[tuple, list[dict]] = {}
         for t in tasks:
             units.setdefault((t["task"], t["ingest_date"]), []).append(t)
@@ -211,10 +220,9 @@ class Store:
         files = []
         for day in dates if only in (None, "bronze") else []:
             for entity in ENTITIES:
-                f = Path(self.s.landing) / entity / f"ingest_date={day}" / "part-00000.jsonl"
-                if f.exists():
+                n = self.landing_rows(entity, day)
+                if n is not None:
                     present += 1
-                    n = self._count_lines(f)
                     lines += n
                     files.append({"entity": entity, "date": day, "rows": n})
                 else:
@@ -225,6 +233,10 @@ class Store:
                 "duration_s": None, "rows_read": 0, "rows_written": lines, "rows_quarantined": 0, "retries": 0,
                 "current": None, "partitions": [f"ingest_date={d}" for d in dates], "errors": [],
                 "missing": missing, "files": files, "tasks": []}
+
+    def landing_rows(self, entity: str, day: str) -> int | None:
+        f = Path(self.s.landing) / entity / f"ingest_date={day}" / "part-00000.jsonl"
+        return self._count_lines(f) if f.exists() else None
 
     def _count_lines(self, path: Path) -> int:
         key, mtime = str(path), path.stat().st_mtime
@@ -264,13 +276,12 @@ class Store:
                 "corrupt_lines": corrupt, "unknown_columns": sorted(unknown)}
 
     def _plans(self, dates: list[str]) -> list[str]:
-        folder = Path(self.s.meta_db).parent / "plans"
-        return [p.name for d in dates for p in sorted(folder.glob(f"*_{d}.txt"))]
+        return [p.name for d in dates for p in sorted(self.plans_dir.glob(f"*_{d}.txt"))]
 
     def plan(self, name: str) -> str | None:
         if not PLAN_NAME.match(name):
             return None
-        path = Path(self.s.meta_db).parent / "plans" / name
+        path = self.plans_dir / name
         return path.read_text(encoding="utf-8") if path.exists() else None
 
     def watermark(self) -> str | None:
@@ -297,8 +308,17 @@ def _atlas_up(url: str, cache: dict) -> bool:
     return up
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    store = Store(settings or get_settings())
+def create_app(settings: Settings | None = None, vitrina: str | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    vitrina = vitrina if vitrina is not None else os.getenv("MIDAS_VITRINA", "")
+    replay = None
+    if vitrina:  # demo web: repite una corrida real grabada (ver vitrina.py)
+        from .vitrina import Replay, ReplayStore
+
+        replay = Replay(Path(vitrina), speed=float(os.getenv("MIDAS_VITRINA_SPEED", "1")))
+        store: Store = ReplayStore(settings, replay)
+    else:
+        store = Store(settings)
     atlas_url = os.getenv("MIDAS_ATLAS_URL", "http://localhost:8000")
     atlas_cache: dict = {}
     app = FastAPI(title="MIDAS · Etapas", version="0.1.0",
@@ -319,7 +339,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/meta")
     def meta() -> dict:
         return {"app": "midas", "watermark": store.watermark(), "manifest": store.manifest(),
-                "atlas_url": atlas_url, "atlas_up": _atlas_up(atlas_url, atlas_cache),
+                "atlas_url": atlas_url, "atlas_up": _atlas_up(atlas_url, atlas_cache), "vitrina": bool(replay),
                 "stages": [{"key": k, "name": n} for k, n, _ in STAGES]}
 
     @app.get("/api/runs")
@@ -344,6 +364,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if text is None:
             raise HTTPException(404, "Plan no encontrado")
         return text
+
+    if replay:
+        @app.get("/vitrina/gold/{name}")
+        def gold(name: str):
+            """La publicación vigente en este momento del bucle (ATLAS la lee como si MIDAS corriera)."""
+            folder, manifest = replay.publication()
+            if name == "_manifest.json":
+                return manifest
+            if name not in {f"{t}.parquet" for t in ("pagos_gold", "clientes_gold", "contracargos_gold",
+                                                    "indicadores_financieros")}:
+                raise HTTPException(404, "No existe")
+            return FileResponse(folder / name, media_type="application/octet-stream",
+                                headers={"X-Midas-Run": manifest["run_id"], "Cache-Control": "no-store"})
 
     @app.get("/")
     def index() -> FileResponse:
