@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+:root { --bg:#000; --text:#f5f5f7; --t2:#98989d; --t3:#6e6e73; --gold1:#f7c843; --gold2:#c47a3a; --blue:#2997ff; --violet:#5b4fe0;
+  --red:#ff453a; --green:#30d158; --card:#1c1c1e; --line:rgba(255,255,255,.08); }
+* { box-sizing:border-box; }
+html, body { margin:0; width:1440px; height:810px; overflow:hidden; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif; -webkit-font-smoothing:antialiased; letter-spacing:-0.02em; }
+.slide { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 110px; }
+.slide.on { display:flex; }
+.glow { position:absolute; width:900px; height:900px; border-radius:50%; filter:blur(10px); opacity:0; animation:glow 2.4s ease forwards; pointer-events:none; }
+.glow.gold { background:radial-gradient(circle, rgba(247,200,67,.22), transparent 62%); }
+.glow.blue { background:radial-gradient(circle, rgba(41,151,255,.20), transparent 62%); }
+@keyframes glow { to { opacity:1; } }
+.in { opacity:0; transform:translateY(18px); animation:in .9s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes in { to { opacity:1; transform:none; } }
+@keyframes pop { 0% { opacity:0; transform:scale(.6); } 60% { opacity:1; transform:scale(1.04); } 100% { opacity:1; transform:scale(1); } }
+.icon { width:150px; height:150px; border-radius:34px; opacity:0; animation:pop 1.1s cubic-bezier(.2,.8,.2,1) forwards; }
+.icon.g { box-shadow:0 18px 60px rgba(247,200,67,.28); }
+.icon.b { box-shadow:0 18px 60px rgba(41,151,255,.35); }
+h1 { font-size:124px; font-weight:700; margin:26px 0 0; letter-spacing:-0.05em; line-height:1; }
+h2 { font-size:58px; font-weight:700; margin:0; letter-spacing:-0.035em; line-height:1.1; }
+h3 { font-size:34px; font-weight:600; margin:16px 0 0; letter-spacing:-0.025em; color:var(--t2); }
+p.lead { font-size:27px; color:var(--t2); margin:20px 0 0; }
+.gold { background:linear-gradient(100deg, var(--gold1), var(--gold2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.blue { background:linear-gradient(100deg, #64b5ff, #a58bff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.red { color:var(--red); }
+.list { margin-top:38px; display:grid; gap:14px; text-align:left; }
+.item { display:flex; align-items:center; gap:18px; font-size:29px; font-weight:600; background:var(--card); border-radius:20px; padding:17px 28px; min-width:960px; border:1px solid var(--line); }
+.item i { width:14px; height:14px; border-radius:50%; background:var(--red); flex:none; box-shadow:0 0 14px rgba(255,69,58,.6); }
+.item small { margin-left:auto; font-size:21px; font-weight:500; color:var(--t2); }
+.item small b { color:var(--gold1); font-weight:700; }
+.layers { display:flex; align-items:stretch; gap:22px; margin-top:52px; }
+.layer { width:300px; border-radius:24px; padding:26px 24px 24px; background:var(--card); border:1px solid var(--line); text-align:left; }
+.layer .chip { display:inline-block; font-size:22px; font-weight:700; padding:7px 18px; border-radius:999px; color:#111; }
+.layer p { font-size:22px; color:var(--t2); margin:16px 0 0; line-height:1.35; letter-spacing:-0.01em; }
+.arrow { align-self:center; font-size:38px; color:var(--t3); opacity:0; animation:in .6s ease forwards; }
+.b1 { background:#c47a3a; } .b2 { background:#d5d9df; } .b3 { background:linear-gradient(100deg,#f7c843,#e9a93a); }
+.stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; margin-top:40px; width:1220px; }
+.stat { background:var(--card); border-radius:24px; padding:26px 18px; border:1px solid var(--line); }
+.stat b { display:block; font:700 58px/1 ui-rounded,"SF Pro Rounded",-apple-system,sans-serif; letter-spacing:-0.04em; }
+.stat span { display:block; font-size:19px; color:var(--t2); margin-top:10px; letter-spacing:-0.01em; }
+.chips { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:30px; max-width:1180px; }
+.chips span { font-size:20px; font-weight:500; padding:8px 18px; border-radius:999px; background:rgba(247,200,67,.12); color:var(--gold1); }
+.chips.blue span { background:rgba(41,151,255,.14); color:#64b5ff; }
+.url { margin-top:30px; font-size:32px; font-weight:600; }
+.small { margin-top:16px; font-size:21px; color:var(--t3); }
+.pair { display:flex; align-items:center; gap:34px; }
+.plus { font-size:70px; color:var(--t3); font-weight:300; opacity:0; animation:in .8s ease .5s forwards; }
+.timeline { margin-top:40px; display:grid; gap:16px; text-align:left; width:1080px; }
+.tl { display:grid; grid-template-columns:120px 1fr auto; gap:20px; align-items:center; font-size:29px; font-weight:600; background:var(--card); border:1px solid var(--line); border-radius:20px; padding:18px 28px; }
+.tl time { font:600 24px ui-monospace,"SF Mono",monospace; color:var(--t2); letter-spacing:0; }
+.tl .ok { color:var(--green); font-size:24px; font-weight:700; }
+.tl.bad { border-color:rgba(255,69,58,.5); background:rgba(255,69,58,.08); }
+.cols { display:grid; grid-template-columns:1fr 210px 1fr; gap:22px; margin-top:44px; width:1220px; align-items:center; }
+.col { background:var(--card); border:1px solid var(--line); border-radius:26px; padding:28px; text-align:left; }
+.col .head { display:flex; align-items:center; gap:14px; font-size:36px; font-weight:700; }
+.col .head img { width:52px; height:52px; border-radius:13px; }
+.col .verb { font-size:20px; color:var(--t2); font-weight:600; margin-top:6px; text-transform:uppercase; letter-spacing:.06em; }
+.col ul { margin:16px 0 0; padding:0 0 0 22px; font-size:22px; color:var(--t2); line-height:1.55; }
+.col .bottom { margin-top:16px; font-size:22px; font-weight:600; }
+.bridge { text-align:center; font-size:22px; color:var(--t2); line-height:1.4; }
+.bridge b { display:block; font-size:42px; color:var(--text); margin-bottom:6px; }
+.flow { display:flex; align-items:center; gap:12px; margin-top:34px; font-size:21px; font-weight:600; }
+.flow span { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:11px 16px; }
+.flow em { color:var(--t3); font-style:normal; }
+.versus { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:42px; width:1100px; }
+.vs { border-radius:26px; padding:30px; text-align:left; background:var(--card); border:1px solid var(--line); }
+.vs .who { font-size:22px; color:var(--t2); font-weight:600; }
+.vs .big { font-size:46px; font-weight:700; margin-top:10px; letter-spacing:-0.03em; }
+.vs p { font-size:21px; color:var(--t2); margin:12px 0 0; }
+.vs.g .big { color:var(--green); } .vs.r { border-color:rgba(255,69,58,.5); } .vs.r .big { color:var(--red); }
+</style></head>
+<body>
+
+<!-- ===================== VIDEO 1 · MIDAS ===================== -->
+<section class="slide" id="m_intro">
+  <div class="glow gold"></div>
+  <img class="icon g" src="midas.png">
+  <h1 class="in gold" style="animation-delay:.5s">MIDAS</h1>
+  <h3 class="in" style="animation-delay:1s">Convierte datos crudos en oro.</h3>
+  <p class="lead in" style="animation-delay:1.6s; font-size:23px">Pipeline de datos financieros · PySpark · dbt · Airflow</p>
+</section>
+
+<section class="slide" id="m_dolor">
+  <h2 class="in">Cada día, cinco sistemas le entregan<br>sus archivos a una fintech.</h2>
+  <p class="lead in" style="animation-delay:.8s">Nunca llegan perfectos:</p>
+  <div class="list">
+    <div class="item in" style="animation-delay:1.8s"><i></i>El mismo pago llega dos veces<small><b>1.257</b> duplicados en un mes</small></div>
+    <div class="item in" style="animation-delay:3.0s"><i></i>Pagos de hace tres días aparecen hoy<small><b>9.444</b> filas tardías</small></div>
+    <div class="item in" style="animation-delay:4.2s"><i></i>Montos imposibles, clientes vacíos, JSON roto<small><b>425</b> registros inválidos</small></div>
+    <div class="item in" style="animation-delay:5.4s"><i></i>La fuente cambia sus columnas sin avisar<small>esquema <b>v1 → v2</b></small></div>
+    <div class="item in" style="animation-delay:6.6s"><i></i>Un proceso falla a mitad de camino<small>¿y si se duplica al re-correrlo?</small></div>
+  </div>
+  <p class="lead in" style="animation-delay:8.8s; font-weight:600; color:#f5f5f7">…y el comité financiero decide con cifras equivocadas.</p>
+</section>
+
+<section class="slide" id="m_solucion">
+  <div class="glow gold"></div>
+  <h2 class="in"><span class="gold">MIDAS</span> convierte lo crudo en oro.</h2>
+  <div class="layers">
+    <div class="layer in" style="animation-delay:1.0s"><span class="chip b1">Bronze</span><p>Copia fiel de cada archivo. Nada se pierde, todo tiene origen.</p></div>
+    <div class="arrow" style="animation-delay:1.8s">→</div>
+    <div class="layer in" style="animation-delay:2.2s"><span class="chip b2">Silver</span><p>Tipos y reglas. Sin duplicados. Lo tardío, a su fecha. Lo inválido, a cuarentena con su motivo.</p></div>
+    <div class="arrow" style="animation-delay:3.0s">→</div>
+    <div class="layer in" style="animation-delay:3.4s"><span class="chip b3">Gold</span><p>Tablas listas para el negocio: pagos, clientes, contracargos, indicadores.</p></div>
+  </div>
+  <p class="lead in" style="animation-delay:5.2s">Idempotente: re-procesar un día deja exactamente el mismo resultado.</p>
+  <p class="small in" style="animation-delay:6.6s">Veámoslo en vivo →</p>
+</section>
+
+<section class="slide" id="m_tecnica">
+  <h2 class="in">Un mes de datos, en menos de tres minutos</h2>
+  <div class="stats">
+    <div class="stat in" style="animation-delay:.6s"><b class="gold">123 mil</b><span>pagos publicados en gold</span></div>
+    <div class="stat in" style="animation-delay:1.0s"><b class="gold">425</b><span>en cuarentena, cada uno con su motivo</span></div>
+    <div class="stat in" style="animation-delay:1.4s"><b class="gold">1.257</b><span>duplicados eliminados</span></div>
+    <div class="stat in" style="animation-delay:1.8s"><b class="gold">9.444</b><span>filas tardías integradas a su fecha</span></div>
+  </div>
+  <div class="chips in" style="animation-delay:3.0s">
+    <span>Window functions</span><span>Broadcast join</span><span>Partition pruning</span><span>Salting contra skew</span><span>AQE</span><span>dbt incremental</span><span>Contratos de datos</span><span>Backfill</span>
+  </div>
+  <p class="lead in" style="animation-delay:4.6s; font-size:23px">Python · PySpark · dbt · DuckDB · Airflow · Docker · GitHub Actions — 50 tests, 93% de cobertura</p>
+</section>
+
+<section class="slide" id="m_teaser">
+  <h2 class="in">Pero… ¿y si cada registro es válido<br>y aun así el día está mal?</h2>
+  <p class="lead in" style="animation-delay:2.2s">Para eso existe su proyecto hermano: <span class="blue" style="font-weight:700">ATLAS</span> →</p>
+</section>
+
+<section class="slide" id="m_outro">
+  <div class="glow gold"></div>
+  <img class="icon g" src="midas.png" style="width:120px;height:120px">
+  <h1 class="in gold" style="animation-delay:.4s; font-size:96px">MIDAS</h1>
+  <h3 class="in" style="animation-delay:.8s">Construyo pipelines de datos y me aseguro de que sean confiables.</h3>
+  <div class="url in gold" style="animation-delay:1.6s">github.com/diegosaaval/midas-data-pipeline</div>
+  <p class="small in" style="animation-delay:2.4s">Diego S · Data Engineer · Proyecto personal con datos sintéticos</p>
+</section>
+
+<!-- ===================== VIDEO 2 · MIDAS + ATLAS ===================== -->
+<section class="slide" id="d_intro">
+  <div class="glow gold" style="left:120px"></div><div class="glow blue" style="right:120px"></div>
+  <div class="pair"><img class="icon g" src="midas.png"><span class="plus">+</span><img class="icon b" src="atlas.png" style="animation-delay:.35s"></div>
+  <h1 class="in" style="animation-delay:.8s; font-size:104px"><span class="gold">MIDAS</span> <span style="color:#6e6e73;font-weight:300">+</span> <span class="blue">ATLAS</span></h1>
+  <h3 class="in" style="animation-delay:1.3s">Construir los datos. Y poder confiar en ellos.</h3>
+</section>
+
+<section class="slide" id="d_dolor">
+  <h2 class="in">Un pipeline en verde<br>no significa datos correctos.</h2>
+  <div class="timeline">
+    <div class="tl in" style="animation-delay:1.6s"><time>06:00</time>El pipeline procesa el día<span class="ok">✓ OK</span></div>
+    <div class="tl in" style="animation-delay:2.8s"><time>06:05</time>Cada registro cumple las reglas<span class="ok">✓ OK</span></div>
+    <div class="tl in" style="animation-delay:4.0s"><time>09:00</time>El comité revisa la tasa de aprobación<span class="ok">✓ publicada</span></div>
+    <div class="tl bad in" style="animation-delay:5.6s"><time class="red">— — —</time>La pasarela de tarjetas había fallado: 2 de cada 3 pagos, rechazados<span class="red" style="font-size:24px;font-weight:700">nadie lo vio</span></div>
+  </div>
+  <p class="lead in" style="animation-delay:8.0s; color:#f5f5f7; font-weight:600">Ningún registro estaba mal. El día completo, sí.</p>
+</section>
+
+<section class="slide" id="d_idea">
+  <h2 class="in">Dos proyectos. Un contrato.</h2>
+  <div class="cols">
+    <div class="col in" style="animation-delay:.9s">
+      <div class="head"><img src="midas.png"><span class="gold">MIDAS</span></div>
+      <div class="verb">Produce</div>
+      <ul><li>Contratos y cuarentena</li><li>Duplicados y datos tardíos</li><li>Reintentos e idempotencia</li></ul>
+      <div class="bottom">Detiene lo que incumple las reglas que conoce.</div>
+    </div>
+    <div class="bridge in" style="animation-delay:2.2s"><b>⇄</b>tablas gold<br>+ manifiesto<br><span style="color:#6e6e73">probado en CI</span></div>
+    <div class="col in" style="animation-delay:1.6s">
+      <div class="head"><img src="atlas.png"><span class="blue">ATLAS</span></div>
+      <div class="verb">Verifica</div>
+      <ul><li>Puntualidad, volumen y estructura</li><li>Reglas de negocio</li><li>Comportamiento contra su historia</li></ul>
+      <div class="bottom">Detecta lo que ninguna regla por registro puede ver.</div>
+    </div>
+  </div>
+  <p class="small in" style="animation-delay:4.4s">Veámoslo en vivo →</p>
+</section>
+
+<section class="slide" id="d_cierre">
+  <h2 class="in">El mismo día, dos miradas.</h2>
+  <div class="versus">
+    <div class="vs g in" style="animation-delay:.8s"><div class="who">MIDAS · cada registro</div><div class="big">✓ Todo OK</div><p>Estados válidos, montos correctos, clientes existentes.</p></div>
+    <div class="vs r in" style="animation-delay:1.6s"><div class="who">ATLAS · el día contra su historia</div><div class="big">0,92 → 0,59</div><p>Tasa de aprobación 7σ por debajo de lo normal. Incidente en segundos.</p></div>
+  </div>
+  <div class="flow in" style="animation-delay:3.2s">
+    <span>Fuentes</span><em>→</em><span><b class="gold">MIDAS</b></span><em>→</em><span>gold + manifiesto</span><em>→</em><span><b class="blue">ATLAS</b></span><em>→</em><span>incidente</span><em>→</em><span>la corrida que lo trajo</span>
+  </div>
+</section>
+
+<section class="slide" id="d_outro">
+  <div class="glow gold" style="left:160px"></div><div class="glow blue" style="right:160px"></div>
+  <div class="pair"><img class="icon g" src="midas.png" style="width:104px;height:104px"><img class="icon b" src="atlas.png" style="width:104px;height:104px;animation-delay:.25s"></div>
+  <h2 class="in" style="animation-delay:.6s; margin-top:30px; font-size:54px"><span class="gold">MIDAS</span> convierte datos crudos en oro.<br><span class="blue">ATLAS</span> verifica que sea oro de verdad.</h2>
+  <div class="url in" style="animation-delay:1.8s; font-size:27px"><span class="gold">github.com/diegosaaval/midas-data-pipeline</span><br><span class="blue">github.com/diegosaaval/atlas-data-quality</span></div>
+  <p class="small in" style="animation-delay:2.6s">Diego S · Data Engineer · Proyectos personales con datos sintéticos</p>
+</section>
+
+<script>
+  const id = new URLSearchParams(location.search).get("s") || location.hash.slice(1) || "m_intro";
+  document.getElementById(id).classList.add("on");
+</script>
+</body></html>

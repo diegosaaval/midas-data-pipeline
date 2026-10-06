@@ -19,7 +19,12 @@
 
 ## Demo
 
-**La historia completa en 3 minutos, con las dos pantallas.** Clona los dos repositorios lado a lado:
+| ▶️ MIDAS · 2 min | ▶️ MIDAS + ATLAS · 1:49 |
+|---|---|
+| [![Video de MIDAS](media/miniatura-midas.png)](media/MIDAS-demo.mp4) | [![Video de MIDAS + ATLAS](media/miniatura-midas-atlas.png)](media/MIDAS-ATLAS-demo.mp4) |
+| El dolor, bronze → silver → gold y un mes real con un reintento, cuarentena y explain plans. | Un pipeline en verde no significa datos correctos: la caída de la pasarela que solo ATLAS ve. |
+
+**Pruébalo tú mismo: la historia completa, con las dos pantallas.** Clona los dos repositorios lado a lado:
 
 ```bash
 git clone https://github.com/diegosaaval/midas-data-pipeline.git

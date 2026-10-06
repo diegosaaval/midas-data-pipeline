@@ -39,6 +39,7 @@ filterwarnings = ["ignore::FutureWarning", "ignore::DeprecationWarning", "ignore
 
 [tool.ruff]
 line-length = 130
+extend-exclude = ["media"]  # guiones de los videos, no son código del producto
 target-version = "py311"
 
 [tool.ruff.lint]

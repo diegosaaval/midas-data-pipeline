@@ -1,0 +1,67 @@
+================================================================
+VIDEO 1 · MIDAS (2:05)
+================================================================
+TÍTULO
+MIDAS — Pipeline de datos financieros con PySpark, dbt y Airflow (Data Engineering)
+
+DESCRIPCIÓN
+MIDAS convierte los datos crudos de una fintech en tablas gold confiables. Cada día, cinco sistemas entregan sus archivos (clientes, comercios, pagos, devoluciones y contracargos) y nunca llegan perfectos: pagos duplicados, datos que llegan tarde, montos imposibles, columnas nuevas sin aviso y procesos que fallan a mitad de camino. MIDAS los lleva por bronze → silver → gold, aparta lo inválido en cuarentena con su motivo y publica tablas listas para el negocio.
+
+Proyecto personal con datos sintéticos.
+
+🔗 Código: https://github.com/diegosaaval/midas-data-pipeline
+🛡️ Su proyecto hermano, ATLAS: https://github.com/diegosaaval/atlas-data-quality
+
+Lo que verás:
+• Una corrida real de un mes, etapa por etapa, en la pantalla de MIDAS
+• Una falla transitoria y su reintento automático
+• Cuarentena con motivo, duplicados eliminados y datos tardíos integrados a su fecha
+• Explain plans de Spark: broadcast join, partition pruning y window functions
+• Historial de corridas con duración por etapa
+
+Cifras de la corrida: 123 mil pagos publicados · 425 registros en cuarentena · 1.257 duplicados eliminados · 9.444 filas tardías · 50 tests · 93% de cobertura.
+
+Stack: Python, PySpark, dbt, DuckDB, Airflow, Docker, GitHub Actions, pytest, FastAPI.
+
+Capítulos
+0:00 MIDAS
+0:05 El problema: los archivos nunca llegan perfectos
+0:18 Bronze, silver y gold
+0:28 En vivo: llegan los archivos del mes
+0:32 Una falla real y su reintento
+0:50 Un mes completo en cámara rápida
+1:15 Etapas, cuarentena y explain plans
+1:44 Cifras y técnicas
+1:52 ¿Y si los datos son válidos y aun así están mal?
+
+Música original generada para este video.
+
+
+================================================================
+VIDEO 2 · MIDAS + ATLAS (1:49)
+================================================================
+TÍTULO
+MIDAS + ATLAS — Construir los datos y poder confiar en ellos (Data Engineering · Data Quality)
+
+DESCRIPCIÓN
+Un pipeline en verde no significa datos correctos. MIDAS procesa los pagos de una fintech y detiene todo lo que incumple las reglas que conoce. ATLAS vigila lo que MIDAS publica y compara cada día con su historia. El 1 de octubre la pasarela de tarjetas falla: 2 de cada 3 pagos con tarjeta se rechazan. Cada registro es válido y MIDAS publica todo en OK… pero ATLAS ve que la tasa de aprobación cayó de 0,92 a 0,59 (7σ por debajo de lo normal), abre un incidente y enlaza la corrida de MIDAS que lo trajo.
+
+MIDAS convierte datos crudos en oro; ATLAS verifica que sea oro de verdad. Los dos se conectan por un contrato (tablas gold + manifiesto) probado en CI.
+
+Proyectos personales con datos sintéticos.
+
+🔗 MIDAS: https://github.com/diegosaaval/midas-data-pipeline
+🔗 ATLAS: https://github.com/diegosaaval/atlas-data-quality
+
+Capítulos
+0:00 MIDAS + ATLAS
+0:06 Un pipeline en verde no significa datos correctos
+0:18 Dos proyectos, un contrato
+0:27 MIDAS procesa el mes
+0:48 ATLAS valida: todo en verde
+0:56 1 de octubre: la pasarela de tarjetas falla
+1:20 El incidente, listo para escalar
+1:28 De vuelta a la corrida que lo trajo
+1:33 El mismo día, dos miradas
+
+Música original generada para este video.
